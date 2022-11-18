@@ -10,6 +10,7 @@ import { DateTime } from "luxon";
 import {
   configFilePath,
   readJsonFile,
+  replacePasswordInObject,
 } from "../../configuration/Configuration.mjs";
 import { getMailSender } from "../../mail/Mail.mjs";
 import { MailSender } from "../../mail/Types.mjs";
@@ -276,12 +277,16 @@ export class CastleWarehouse {
   };
 
   public getStatus = async (): Promise<SystemStatus> => {
+    const cleanConfig = JSON.parse(JSON.stringify(this.configuration));
+    replacePasswordInObject(cleanConfig);
+    const cleanValidConfig = JSON.parse(JSON.stringify(this.validConfig));
+    replacePasswordInObject(cleanValidConfig);
     return {
       startedAt: this.startedAt,
       configuration: {
-        content: this.configuration,
+        content: cleanConfig,
         errors: this.configErrors,
-        valid: this.validConfig,
+        valid: cleanValidConfig,
       },
     };
   };

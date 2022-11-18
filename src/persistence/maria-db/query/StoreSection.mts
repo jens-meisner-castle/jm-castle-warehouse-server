@@ -1,17 +1,17 @@
 import {
   InsertResponse,
   PersistentRow,
-  Row_Store as Row,
+  Row_StoreSection as Row,
   SelectResponse,
 } from "jm-castle-warehouse-types";
 import { without } from "../../../utils/Basic.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
-import { TableStore } from "../tables/Store.mjs";
+import { TableStoreSection } from "../tables/StoreSection.mjs";
 import { Filter_NameLike, valuesClause } from "./QueryUtils.mjs";
 
 export { Row };
 
-const table = TableStore;
+const table = TableStoreSection;
 
 export const insert = async (
   values: Row & PersistentRow,
@@ -33,35 +33,35 @@ export const update = async (
   client: MariaDbClient
 ): Promise<InsertResponse<Row>> => {
   try {
-    const { store_id, dataset_version } = values;
-    const valuesToUpdate = without({ ...values }, "store_id");
+    const { section_id, dataset_version } = values;
+    const valuesToUpdate = without({ ...values }, "section_id");
     valuesToUpdate.dataset_version = dataset_version + 1;
     const cmd = `UPDATE ${table.id} SET${valuesClause(
       valuesToUpdate
-    )} WHERE store_id = '${store_id}' AND dataset_version = ${dataset_version}`;
+    )} WHERE section_id = '${section_id}' AND dataset_version = ${dataset_version}`;
     const response: any = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
     if (affectedRows === 1) {
       return { result: { cmd, affectedRows, data: values } };
     } else {
-      const { result, error } = await selectByKey(store_id, client);
+      const { result, error } = await selectByKey(section_id, client);
       const { rows } = result || {};
       if (rows && rows.length === 1) {
         const existingRow = rows[0];
         return {
-          error: `The current dataset_version of store (${store_id}) is ${existingRow.dataset_version}. You tried to update with dataset_version ${dataset_version}. Refresh your data first.`,
+          error: `The current dataset_version of section (${section_id}) is ${existingRow.dataset_version}. You tried to update with dataset_version ${dataset_version}. Refresh your data first.`,
         };
       }
       if (rows && rows.length === 0) {
-        return { error: `The store (${store_id}) was not found.` };
+        return { error: `The section (${section_id}) was not found.` };
       }
       if (error) {
         return {
-          error: `Store (${store_id}) was not updated. Received error when chcking for reason: ${error}`,
+          error: `Section (${section_id}) was not updated. Received error when chcking for reason: ${error}`,
         };
       }
       return {
-        error: `Fatal error when updating store (${store_id}). Store was not updated.`,
+        error: `Fatal error when updating section (${section_id}). Section was not updated.`,
       };
     }
   } catch (error) {
@@ -70,11 +70,11 @@ export const update = async (
 };
 
 export const selectByKey = async (
-  storeId: string,
+  sectionId: string,
   client: MariaDbClient
 ): Promise<SelectResponse<Row>> => {
   try {
-    const cmd = `SELECT * FROM ${table.id} WHERE store_id = '${storeId}'`;
+    const cmd = `SELECT * FROM ${table.id} WHERE section_id = '${sectionId}'`;
     const queryResult = await client.getDatabasePool().query(cmd);
     const rows: Row[] = [];
     queryResult.forEach((r: Row) => rows.push(r));

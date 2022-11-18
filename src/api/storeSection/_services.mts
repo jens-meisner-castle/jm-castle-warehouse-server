@@ -1,4 +1,4 @@
-import { Row_Store } from "jm-castle-warehouse-types/build";
+import { Row_StoreSection } from "jm-castle-warehouse-types/build";
 import {
   getOptionalSingleQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
@@ -12,7 +12,110 @@ import { ApiService } from "../Types.mjs";
 const allServices: ApiService[] = [];
 
 allServices.push({
-  url: "/store/select",
+  url: "/store-section/insert",
+  method: "POST",
+  parameters: getStrictSingleQueryParametersSchema(
+    "section_id",
+    "The id of the section to create.",
+    "string"
+  ),
+  name: "Insert a new section.",
+  handler: async (req, res) => {
+    try {
+      const section: Row_StoreSection = req.body;
+      const { section_id = undefined } =
+        typeof req.query === "object" ? req.query : {};
+      if (section_id) {
+        const persistence = getCurrentSystem()?.getDefaultPersistence();
+        if (persistence) {
+          const response = await persistence.tables.storeSection.insert({
+            ...section,
+            ...initialMasterdataFields(),
+          });
+          const { result, error } = response || {};
+          if (error) {
+            res.send({ error });
+          } else {
+            if (result) {
+              res.send({ response: { result } });
+            } else {
+              res.send({
+                error: `Received undefined result from insert section.`,
+              });
+            }
+          }
+        } else {
+          res.send({
+            error: "Currently is no default persistence available.",
+          });
+        }
+      } else {
+        res.send({
+          error:
+            "This url needs a query parameter: ...?section_id=<id of the section>",
+        });
+      }
+    } catch (error) {
+      res.send({ error: error.toString() });
+    }
+  },
+});
+
+allServices.push({
+  url: "/store-section/update",
+  method: "POST",
+  parameters: getStrictSingleQueryParametersSchema(
+    "section_id",
+    "The id of the section to update.",
+    "string"
+  ),
+  name: "Update an existing section.",
+  handler: async (req, res) => {
+    try {
+      const section: Row_StoreSection = req.body;
+      const { section_id = undefined } =
+        typeof req.query === "object" ? req.query : {};
+      if (section_id) {
+        const persistence = getCurrentSystem()?.getDefaultPersistence();
+        if (persistence) {
+          const response = await persistence.tables.storeSection.update({
+            ...section,
+            ...without(
+              without(initialMasterdataFields(), "created_at"),
+              "dataset_version"
+            ),
+          });
+          const { result, error } = response || {};
+          if (error) {
+            res.send({ error });
+          } else {
+            if (result) {
+              res.send({ response: { result } });
+            } else {
+              res.send({
+                error: `Received undefined result from update section.`,
+              });
+            }
+          }
+        } else {
+          res.send({
+            error: "Currently is no default persistence available.",
+          });
+        }
+      } else {
+        res.send({
+          error:
+            "This url needs a query parameter: ...?section_id=<id of the section>",
+        });
+      }
+    } catch (error) {
+      res.send({ error: error.toString() });
+    }
+  },
+});
+
+allServices.push({
+  url: "/store-section/select",
   method: "GET",
   parameters: getOptionalSingleQueryParametersSchema(
     "name",
@@ -27,7 +130,7 @@ allServices.push({
       const usedName = name ? addJokerToFilterValue(name) : "%";
       const persistence = getCurrentSystem()?.getDefaultPersistence();
       if (persistence) {
-        const response = await persistence.tables.store.select({
+        const response = await persistence.tables.storeSection.select({
           name: usedName,
         });
         const { result, error } = response || {};
@@ -43,109 +146,6 @@ allServices.push({
       } else {
         res.send({
           error: "Currently is no default persistence available.",
-        });
-      }
-    } catch (error) {
-      res.send({ error: error.toString() });
-    }
-  },
-});
-
-allServices.push({
-  url: "/store/insert",
-  method: "POST",
-  parameters: getStrictSingleQueryParametersSchema(
-    "store_id",
-    "The id of the store to create.",
-    "string"
-  ),
-  name: "Insert a new store.",
-  handler: async (req, res) => {
-    try {
-      const store: Row_Store = req.body;
-      const { store_id = undefined } =
-        typeof req.query === "object" ? req.query : {};
-      if (store_id) {
-        const persistence = getCurrentSystem()?.getDefaultPersistence();
-        if (persistence) {
-          const response = await persistence.tables.store.insert({
-            ...store,
-            ...initialMasterdataFields(),
-          });
-          const { result, error } = response || {};
-          if (error) {
-            res.send({ error });
-          } else {
-            if (result) {
-              res.send({ response: { result } });
-            } else {
-              res.send({
-                error: `Received undefined result from insert store.`,
-              });
-            }
-          }
-        } else {
-          res.send({
-            error: "Currently is no default persistence available.",
-          });
-        }
-      } else {
-        res.send({
-          error:
-            "This url needs a query parameter: ...?store_id=<id of the store>",
-        });
-      }
-    } catch (error) {
-      res.send({ error: error.toString() });
-    }
-  },
-});
-
-allServices.push({
-  url: "/store/update",
-  method: "POST",
-  parameters: getStrictSingleQueryParametersSchema(
-    "store_id",
-    "The id of the store to update.",
-    "string"
-  ),
-  name: "Update an existing store.",
-  handler: async (req, res) => {
-    try {
-      const store: Row_Store = req.body;
-      const { store_id = undefined } =
-        typeof req.query === "object" ? req.query : {};
-      if (store_id) {
-        const persistence = getCurrentSystem()?.getDefaultPersistence();
-        if (persistence) {
-          const response = await persistence.tables.store.update({
-            ...store,
-            ...without(
-              without(initialMasterdataFields(), "created_at"),
-              "dataset_version"
-            ),
-          });
-          const { result, error } = response || {};
-          if (error) {
-            res.send({ error });
-          } else {
-            if (result) {
-              res.send({ response: { result } });
-            } else {
-              res.send({
-                error: `Received undefined result from update store.`,
-              });
-            }
-          }
-        } else {
-          res.send({
-            error: "Currently is no default persistence available.",
-          });
-        }
-      } else {
-        res.send({
-          error:
-            "This url needs a query parameter: ...?store_id=<id of the store>",
         });
       }
     } catch (error) {

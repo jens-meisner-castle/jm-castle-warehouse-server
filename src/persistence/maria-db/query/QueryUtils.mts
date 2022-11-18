@@ -1,7 +1,12 @@
 import { PersistentRow } from "jm-castle-warehouse-types";
 
-export interface Filter_StoreLike {
+export interface Filter_NameLike {
   name: string;
+}
+
+export interface Filter_At_FromTo_Seconds {
+  at_from: number;
+  at_to: number;
 }
 
 export const valueInClause = (v: any) => {
