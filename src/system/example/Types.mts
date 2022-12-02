@@ -29,4 +29,5 @@ export interface Example {
   name: string;
   store: StoreExample[];
   article: ArticleExample[];
+  image: { image_id: string; path: string }[];
 }

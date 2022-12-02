@@ -1,10 +1,10 @@
 import { Table } from "jm-castle-warehouse-types";
 import { masterdataTableColumnsFragment } from "./Masterdata.mjs";
 
-export const TableArticle: Table = {
-  id: "article",
+export const TableImageContent: Table = {
+  id: "image_content",
   columnsFragment:
-    "article_id VARCHAR(100) PRIMARY KEY, name VARCHAR(100), article_img_ref VARCHAR(100), count_unit VARCHAR(100)" +
+    "image_id VARCHAR(100) PRIMARY KEY, image_extension VARCHAR(50), size_in_bytes INT, width INT, height INT" +
     ", " +
     masterdataTableColumnsFragment(),
 };

@@ -7,10 +7,10 @@ services.forEach((service) => {
   const { method, url, handler } = service;
   switch (method) {
     case "POST":
-      router.post(service.url, service.handler);
+      router.post(url, ...handler);
       break;
     case "GET":
     default:
-      router.get(service.url, service.handler);
+      router.get(url, ...handler);
   }
 });

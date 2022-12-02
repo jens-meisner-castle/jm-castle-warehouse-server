@@ -16,7 +16,7 @@ export interface ApiService {
     any,
     any,
     Record<string, any>
-  >;
+  >[];
 }
 
 export const getSerializableServices = (services: ApiService[]) => {

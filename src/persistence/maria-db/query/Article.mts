@@ -20,7 +20,6 @@ export const insert = async (
   try {
     const cmd = `INSERT INTO ${table.id} SET${valuesClause(values)}`;
     const response: any = await client.getDatabasePool().query(cmd);
-    console.log(cmd);
     const { affectedRows } = response || {};
     return { result: { cmd, affectedRows, data: values } };
   } catch (error) {
@@ -42,7 +41,9 @@ export const update = async (
     const response: any = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
     if (affectedRows === 1) {
-      return { result: { cmd, affectedRows, data: values } };
+      return {
+        result: { cmd, affectedRows, data: { ...values, ...valuesToUpdate } },
+      };
     } else {
       const { result, error } = await selectByKey(article_id, client);
       const { rows } = result || {};
@@ -57,7 +58,7 @@ export const update = async (
       }
       if (error) {
         return {
-          error: `Article (${article_id}) was not updated. Received error when chcking for reason: ${error}`,
+          error: `Article (${article_id}) was not updated. Received error when checking for reason: ${error}`,
         };
       }
       return {

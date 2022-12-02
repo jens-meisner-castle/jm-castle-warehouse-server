@@ -1,6 +1,9 @@
+import fs from "fs";
 import {
   CheckedConfiguration,
   Configuration,
+  FilesystemStoreSpec,
+  ImageStoreSpec,
   MailingSpec,
   PersistenceSpec,
   SystemSpec,
@@ -12,6 +15,7 @@ import {
   readJsonFile,
   replacePasswordInObject,
 } from "../../configuration/Configuration.mjs";
+import { ImageFileStore } from "../../image-store/ImageFileStore.mjs";
 import { getMailSender } from "../../mail/Mail.mjs";
 import { MailSender } from "../../mail/Types.mjs";
 import { getPersistence } from "../../persistence/Persistence.mjs";
@@ -44,10 +48,15 @@ export class CastleWarehouse {
   private configErrors: string[] | undefined;
   private validConfig: CheckedConfiguration;
 
+  private imageStore: ImageFileStore;
   private persistence: Record<string, Persistence> = {};
   private defaultPersistence: Persistence | undefined = undefined;
   private mailSenders: Record<string, MailSender> = {};
   private defaultMailSender: MailSender | undefined = undefined;
+
+  private caCert: Buffer | null | undefined = undefined;
+  private serverCert: Buffer;
+  private serverKey: Buffer;
 
   public start = async () => {
     await this.setupMailSenders();
@@ -65,6 +74,40 @@ export class CastleWarehouse {
       }
     }
     await this.setupPersistence();
+    await this.setupImageStore();
+  };
+
+  public getImageStorePath = () => this.validConfig.imageStore.path;
+
+  public getOwnApiUrl = () => {
+    const { host, port } = this.validConfig.system;
+    return `https://${host}:${port}/api`;
+  };
+
+  public getOwnPort = () => this.validConfig.system.port;
+
+  public getCACertificate = (): Buffer | null | undefined => {
+    if (this.caCert === undefined) {
+      const path = this.validConfig.system.certs.ca;
+      this.caCert = path ? fs.readFileSync(path) : null;
+    }
+    return this.caCert;
+  };
+
+  public getServerCertificate = () => {
+    if (!this.serverCert) {
+      const path = this.validConfig.system.certs.hostCert;
+      this.serverCert = fs.readFileSync(path);
+    }
+    return this.serverCert;
+  };
+
+  public getServerKey = () => {
+    if (!this.serverKey) {
+      const path = this.validConfig.system.certs.hostKey;
+      this.serverKey = fs.readFileSync(path);
+    }
+    return this.serverKey;
   };
 
   private disconnectFromAllPersistences = async () => {
@@ -110,14 +153,85 @@ export class CastleWarehouse {
     validConfig: Configuration,
     errors: string[]
   ): boolean => {
-    const { name } = spec;
+    const { name, host, port, certs } = spec;
     if (name && typeof name !== "string") {
       errors.push(
         `Bad system spec: If used the property "name" must have a string as value. Found type "${typeof name}".`
       );
       return false;
     }
+    if (typeof host !== "string") {
+      errors.push(
+        `Bad system spec: The property "host" must have a string as value. Found type "${typeof name}".`
+      );
+      return false;
+    }
+    if (typeof port !== "number") {
+      errors.push(
+        `Bad system spec: The property "port" must have a number as value. Found type "${typeof name}".`
+      );
+      return false;
+    }
+    if (typeof certs !== "object") {
+      errors.push(
+        `Bad system spec: The property "certs" must have an object as value. Found type "${typeof name}".`
+      );
+      return false;
+    }
+    const { ca, hostCert, hostKey } = certs;
+    if (ca && typeof ca !== "string") {
+      errors.push(
+        `Bad system spec: If used the property "ca" (within "certs") must have a string as value. Found type "${typeof name}".`
+      );
+      return false;
+    }
+    if (typeof hostCert !== "string") {
+      errors.push(
+        `Bad system spec: The property "hostCert" (within "certs") must have a string as value. Found type "${typeof name}".`
+      );
+      return false;
+    }
+    if (typeof hostKey !== "string") {
+      errors.push(
+        `Bad system spec: The property "hostKey" (within "certs") must have a string as value. Found type "${typeof name}".`
+      );
+      return false;
+    }
     validConfig.system = spec;
+    return true;
+  };
+
+  private checkImageStoreSpec = (
+    spec: FilesystemStoreSpec & ImageStoreSpec,
+    validConfig: Configuration,
+    errors: string[]
+  ): boolean => {
+    const { type, path, maxWidth, maxHeight } = spec;
+    if (type !== "file-system") {
+      errors.push(
+        `Bad imageStore spec: Currently is only "file-system" as type possible. Found type "${type}".`
+      );
+      return false;
+    }
+    if (typeof path !== "string") {
+      errors.push(
+        `Bad imageStore spec: The property "path" must be a string, but is ${typeof path}.`
+      );
+      return false;
+    }
+    if (typeof maxWidth !== "number") {
+      errors.push(
+        `Bad imageStore spec: The property "maxWidth" must be a number, but is ${typeof maxWidth}.`
+      );
+      return false;
+    }
+    if (typeof maxHeight !== "number") {
+      errors.push(
+        `Bad imageStore spec: The property "maxHeight" must be a number, but is ${typeof maxHeight}.`
+      );
+      return false;
+    }
+    validConfig.imageStore = spec;
     return true;
   };
 
@@ -213,14 +327,30 @@ export class CastleWarehouse {
     configuration: Configuration
   ): { validConfig: CheckedConfiguration; errors: string[] | undefined } => {
     try {
-      const { persistence, mail, system } = configuration;
+      const { persistence, mail, system, imageStore } = configuration;
       const validConfig: CheckedConfiguration = {
         isValid: true,
+        system: {
+          host: "localhost",
+          port: 53001,
+          certs: {
+            ca: "cert/not-available.pem",
+            hostCert: "cert/not-available.crt",
+            hostKey: "cert/not-available.key",
+          },
+        },
         persistence: {},
         mail: {},
+        imageStore: {
+          type: "file-system",
+          path: "none",
+          maxWidth: 400,
+          maxHeight: 400,
+        },
       };
       const errors: string[] = [];
       system && this.checkSystemSpec(system, validConfig, errors);
+      imageStore && this.checkImageStoreSpec(imageStore, validConfig, errors);
       persistence &&
         Object.keys(persistence).forEach((k) => {
           const persistenceSpec = persistence[k];
@@ -246,7 +376,25 @@ export class CastleWarehouse {
       return { validConfig, errors: errors.length ? errors : undefined };
     } catch (error) {
       return {
-        validConfig: { persistence: {}, mail: {} },
+        validConfig: {
+          system: {
+            host: "localhost",
+            port: 53001,
+            certs: {
+              ca: "cert/not-available.pem",
+              hostCert: "cert/not-available.crt",
+              hostKey: "cert/not-available.key",
+            },
+          },
+          persistence: {},
+          mail: {},
+          imageStore: {
+            type: "file-system",
+            path: "none",
+            maxWidth: 400,
+            maxHeight: 400,
+          },
+        },
         errors: [error.toString()],
       };
     }
@@ -264,6 +412,11 @@ export class CastleWarehouse {
     });
   };
 
+  private setupImageStore = async () => {
+    this.imageStore = new ImageFileStore(this.validConfig.imageStore);
+    return;
+  };
+
   private setupMailSenders = async () => {
     Object.keys(this.validConfig.mail).forEach((k) => {
       const mailingSpec = this.validConfig.mail[k];
@@ -275,6 +428,8 @@ export class CastleWarehouse {
       }
     });
   };
+
+  public getImageStore = () => this.imageStore;
 
   public getStatus = async (): Promise<SystemStatus> => {
     const cleanConfig = JSON.parse(JSON.stringify(this.configuration));

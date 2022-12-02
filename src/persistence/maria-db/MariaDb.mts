@@ -3,6 +3,8 @@ import {
   PersistentRow,
   Row_Article,
   Row_Emission,
+  Row_ImageContent,
+  Row_ImageReference,
   Row_Receipt,
   Row_Store,
   Row_StoreSection,
@@ -19,8 +21,21 @@ import {
   select as selectFromEmission,
 } from "./query/Emission.mjs";
 import {
+  insert as insertImageContent,
+  select as selectFromImageContent,
+  update as updateImageContent,
+} from "./query/ImageContent.mjs";
+import {
+  insert as insertImageReference,
+  select as selectFromImageReference,
+  update as updateImageReference,
+} from "./query/ImageReference.mjs";
+import {
   Filter_At_FromTo_Seconds,
+  Filter_ImageExtension,
+  Filter_ImageId,
   Filter_NameLike,
+  Filter_Reference,
 } from "./query/QueryUtils.mjs";
 import {
   insert as insertReceipt,
@@ -38,6 +53,8 @@ import {
 } from "./query/StoreSection.mjs";
 import { TableArticle } from "./tables/Article.mjs";
 import { TableEmission } from "./tables/Emission.mjs";
+import { TableImageContent } from "./tables/ImageContent.mjs";
+import { TableImageReference } from "./tables/ImageReference.mjs";
 import { TableReceipt } from "./tables/Receipt.mjs";
 import { TableStore } from "./tables/Store.mjs";
 import { TableStoreSection } from "./tables/StoreSection.mjs";
@@ -49,6 +66,8 @@ export interface RunPartsResponse {
 }
 
 export const AllTables = [
+  TableImageReference,
+  TableImageContent,
   TableStore,
   TableStoreSection,
   TableArticle,
@@ -106,6 +125,22 @@ export class MariaDbClient implements Persistence {
     return this.setupPool;
   };
   public tables = {
+    imageReference: {
+      insert: (values: Row_ImageReference & PersistentRow) =>
+        insertImageReference(values, this),
+      update: (values: Row_ImageReference & PersistentRow) =>
+        updateImageReference(values, this),
+      select: (filter: Filter_ImageId | Filter_Reference) =>
+        selectFromImageReference(filter, this),
+    },
+    imageContent: {
+      insert: (values: Row_ImageContent & PersistentRow) =>
+        insertImageContent(values, this),
+      update: (values: Row_ImageContent & PersistentRow) =>
+        updateImageContent(values, this),
+      select: (filter: Filter_ImageId | Filter_ImageExtension) =>
+        selectFromImageContent(filter, this),
+    },
     store: {
       insert: (values: Row_Store & PersistentRow) => insertStore(values, this),
       update: (values: Row_Store & PersistentRow) => updateStore(values, this),

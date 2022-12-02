@@ -18,44 +18,46 @@ allServices.push({
     "string"
   ),
   name: "Create example data (name: 'home').",
-  handler: async (req, res) => {
-    try {
-      const { name = undefined } =
-        typeof req.query === "object" ? req.query : {};
-      const example = isExampleName(name) ? AllExamples[name] : undefined;
-      if (example) {
-        const persistence = getCurrentSystem()?.getDefaultPersistence();
-        if (persistence) {
-          const response = await createDataFromExample(
-            example,
-            getCurrentSystem()
-          );
-          const { result, error } = response || {};
-          if (error) {
-            res.send({ error });
-          } else {
-            if (result) {
-              res.send({ response: { result } });
+  handler: [
+    async (req, res) => {
+      try {
+        const { name = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        const example = isExampleName(name) ? AllExamples[name] : undefined;
+        if (example) {
+          const persistence = getCurrentSystem()?.getDefaultPersistence();
+          if (persistence) {
+            const response = await createDataFromExample(
+              example,
+              getCurrentSystem()
+            );
+            const { result, error } = response || {};
+            if (error) {
+              res.send({ error });
             } else {
-              res.send({ error: `Received undefined result from select.` });
+              if (result) {
+                res.send({ response: { result } });
+              } else {
+                res.send({ error: `Received undefined result from select.` });
+              }
             }
+          } else {
+            res.send({
+              error: "Currently is no default persistence available.",
+            });
           }
         } else {
           res.send({
-            error: "Currently is no default persistence available.",
+            error: `This url needs query a parameter "name", which must be one of: ${Object.keys(
+              AllExamples
+            ).join(", ")}`,
           });
         }
-      } else {
-        res.send({
-          error: `This url needs query a parameter "name", which must be one of: ${Object.keys(
-            AllExamples
-          ).join(", ")}`,
-        });
+      } catch (error) {
+        res.send({ error: error.toString() });
       }
-    } catch (error) {
-      res.send({ error: error.toString() });
-    }
-  },
+    },
+  ],
 });
 
 export const services = allServices;

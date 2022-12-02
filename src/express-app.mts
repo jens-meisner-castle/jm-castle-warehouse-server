@@ -2,10 +2,22 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import createError from "http-errors";
-
 import { router as apiRouter } from "./routes/api.mjs";
+import { CastleWarehouse } from "./system/status/System.mjs";
 
-export const newExpressApp = (port: number | string | false) => {
+export const loggerMiddleware = (
+  request: express.Request,
+  response: express.Response,
+  next: express.NextFunction
+) => {
+  console.log(`${request.method} ${request.path} ${request.query}`);
+  next();
+};
+
+export const newExpressApp = (
+  port: number | string | false,
+  system: CastleWarehouse
+) => {
   const app = express();
 
   app.set("port", port);
@@ -15,6 +27,13 @@ export const newExpressApp = (port: number | string | false) => {
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
   app.use(express.static("./client"));
+  const imageStorePath = system.getImageStorePath();
+  app.use(
+    imageStorePath.startsWith("/") ? imageStorePath : `/${imageStorePath}`,
+    express.static(
+      imageStorePath.startsWith("/") ? imageStorePath.slice(1) : imageStorePath
+    )
+  );
 
   app.use("/api", apiRouter);
 
@@ -29,6 +48,7 @@ export const newExpressApp = (port: number | string | false) => {
 
   // error handler
   app.use(function (err: any, req: any, res: any, next: any) {
+    console.log(req);
     // set locals, only providing error in development
     res.locals.message = err.message;
     res.locals.error = req.app.get("env") === "development" ? err : {};

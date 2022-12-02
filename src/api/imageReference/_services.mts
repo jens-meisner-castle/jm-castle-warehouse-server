@@ -1,36 +1,32 @@
-import { Row_Article } from "jm-castle-warehouse-types/build";
-import {
-  getOptionalSingleQueryParametersSchema,
-  getStrictSingleQueryParametersSchema,
-} from "../../json-schema/parameters.mjs";
+import { Row_ImageReference } from "jm-castle-warehouse-types/build";
+import { getStrictSingleQueryParametersSchema } from "../../json-schema/parameters.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
-import { addJokerToFilterValue } from "../../utils/Sql.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
 import { ApiService } from "../Types.mjs";
 
 const allServices: ApiService[] = [];
 
 allServices.push({
-  url: "/article/insert",
+  url: "/image-ref/insert",
   method: "POST",
   parameters: getStrictSingleQueryParametersSchema(
-    "article_id",
-    "The id of the article to create.",
+    "image_id",
+    "The id of the image reference to create.",
     "string"
   ),
-  name: "Insert a new article.",
+  name: "Insert a new image reference.",
   handler: [
     async (req, res) => {
       try {
-        const article: Row_Article = req.body;
-        const { article_id = undefined } =
+        const imageRef: Row_ImageReference = req.body;
+        const { image_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        if (article_id) {
+        if (image_id) {
           const persistence = getCurrentSystem()?.getDefaultPersistence();
           if (persistence) {
-            const response = await persistence.tables.article.insert({
-              ...article,
+            const response = await persistence.tables.imageReference.insert({
+              ...imageRef,
               ...initialMasterdataFields(),
             });
             const { result, error } = response || {};
@@ -41,7 +37,7 @@ allServices.push({
                 res.send({ response: { result } });
               } else {
                 res.send({
-                  error: `Received undefined result from insert article.`,
+                  error: `Received undefined result from insert image reference.`,
                 });
               }
             }
@@ -53,7 +49,7 @@ allServices.push({
         } else {
           res.send({
             error:
-              "This url needs a query parameter: ...?article_id=<id of the article>",
+              "This url needs a query parameter: ...?image_id=<id of the image>",
           });
         }
       } catch (error) {
@@ -64,25 +60,25 @@ allServices.push({
 });
 
 allServices.push({
-  url: "/article/update",
+  url: "/image-ref/update",
   method: "POST",
   parameters: getStrictSingleQueryParametersSchema(
-    "article_id",
-    "The id of the article to update.",
+    "image_id",
+    "The id of the image to update.",
     "string"
   ),
-  name: "Update an existing article.",
+  name: "Update an existing image reference.",
   handler: [
     async (req, res) => {
       try {
-        const article: Row_Article = req.body;
-        const { article_id = undefined } =
+        const imageRef: Row_ImageReference = req.body;
+        const { image_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        if (article_id) {
+        if (image_id) {
           const persistence = getCurrentSystem()?.getDefaultPersistence();
           if (persistence) {
-            const response = await persistence.tables.article.update({
-              ...article,
+            const response = await persistence.tables.imageReference.update({
+              ...imageRef,
               ...without(
                 without(initialMasterdataFields(), "created_at"),
                 "dataset_version"
@@ -96,7 +92,7 @@ allServices.push({
                 res.send({ response: { result } });
               } else {
                 res.send({
-                  error: `Received undefined result from update article.`,
+                  error: `Received undefined result from update image reference.`,
                 });
               }
             }
@@ -108,7 +104,7 @@ allServices.push({
         } else {
           res.send({
             error:
-              "This url needs a query parameter: ...?article_id=<id of the article>",
+              "This url needs a query parameter: ...?image_id=<id of the image>",
           });
         }
       } catch (error) {
@@ -119,38 +115,46 @@ allServices.push({
 });
 
 allServices.push({
-  url: "/article/select",
+  url: "/image-ref/select",
   method: "GET",
-  parameters: getOptionalSingleQueryParametersSchema(
-    "name",
-    "A fragment of the name to search.",
+  parameters: getStrictSingleQueryParametersSchema(
+    "image_id",
+    "The id of the image ref to search.",
     "string"
   ),
-  name: "Select articles by name.",
+  name: "Select single image by id.",
   handler: [
     async (req, res) => {
       try {
-        const { name = undefined } =
+        const { image_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        const usedName = name ? addJokerToFilterValue(name) : "%";
-        const persistence = getCurrentSystem()?.getDefaultPersistence();
-        if (persistence) {
-          const response = await persistence.tables.article.select({
-            name: usedName,
-          });
-          const { result, error } = response || {};
-          if (error) {
-            res.send({ error });
-          } else {
-            if (result) {
-              res.send({ response: { result } });
+        if (image_id) {
+          const persistence = getCurrentSystem()?.getDefaultPersistence();
+          if (persistence) {
+            const response = await persistence.tables.imageReference.select({
+              image_id,
+            });
+            const { result, error } = response || {};
+            if (error) {
+              res.send({ error });
             } else {
-              res.send({ error: `Received undefined result from select.` });
+              if (result) {
+                res.send({ response: { result } });
+              } else {
+                res.send({
+                  error: `Received undefined result from image select.`,
+                });
+              }
             }
+          } else {
+            res.send({
+              error: "Currently is no default persistence available.",
+            });
           }
         } else {
           res.send({
-            error: "Currently is no default persistence available.",
+            error:
+              "This url needs a query parameter: ...?image_id=<id of the image reference>",
           });
         }
       } catch (error) {

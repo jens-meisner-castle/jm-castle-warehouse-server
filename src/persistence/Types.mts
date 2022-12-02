@@ -2,6 +2,8 @@ import {
   InsertResponse,
   Row_Article,
   Row_Emission,
+  Row_ImageContent,
+  Row_ImageReference,
   Row_Receipt,
   Row_Store,
   Row_StoreSection,
@@ -11,12 +13,37 @@ import {
 
 import {
   Filter_At_FromTo_Seconds,
+  Filter_ImageExtension,
+  Filter_ImageId,
   Filter_NameLike,
+  Filter_Reference,
 } from "./maria-db/query/QueryUtils.mjs";
 
 export interface Persistence {
   type: () => string;
   tables: {
+    imageReference: {
+      insert: (
+        values: Row_ImageReference
+      ) => Promise<InsertResponse<Row_ImageReference>>;
+      update: (
+        values: Row_ImageReference
+      ) => Promise<UpdateResponse<Row_ImageReference>>;
+      select: (
+        filter: Filter_ImageId | Filter_Reference
+      ) => Promise<SelectResponse<Row_ImageReference>>;
+    };
+    imageContent: {
+      insert: (
+        values: Row_ImageContent
+      ) => Promise<InsertResponse<Row_ImageContent>>;
+      update: (
+        values: Row_ImageContent
+      ) => Promise<UpdateResponse<Row_ImageContent>>;
+      select: (
+        filter: Filter_ImageId | Filter_ImageExtension
+      ) => Promise<SelectResponse<Row_ImageContent>>;
+    };
     store: {
       insert: (values: Row_Store) => Promise<InsertResponse<Row_Store>>;
       update: (values: Row_Store) => Promise<UpdateResponse<Row_Store>>;

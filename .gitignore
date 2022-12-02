@@ -14,9 +14,13 @@
 /client
 
 # private data
-/public/config/private-local-config.json
-/public/config/private-castle-config.json
-/public/config/private-setup-config.json
+/config/private-config.json
+
+#store
+/store
+
+#certificates
+/cert
 
 # misc
 .DS_Store

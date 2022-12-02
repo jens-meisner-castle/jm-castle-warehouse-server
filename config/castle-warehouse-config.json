@@ -1,0 +1,5 @@
+{
+  "system": { "name": "empty castle-warehouse" },
+  "persistence": {},
+  "imageStore": { "type": "file-system", "path": "store/image" }
+}

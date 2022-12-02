@@ -20,35 +20,37 @@ allServices.push({
     "string"
   ),
   name: "Select stores by name.",
-  handler: async (req, res) => {
-    try {
-      const { name = undefined } =
-        typeof req.query === "object" ? req.query : {};
-      const usedName = name ? addJokerToFilterValue(name) : "%";
-      const persistence = getCurrentSystem()?.getDefaultPersistence();
-      if (persistence) {
-        const response = await persistence.tables.store.select({
-          name: usedName,
-        });
-        const { result, error } = response || {};
-        if (error) {
-          res.send({ error });
-        } else {
-          if (result) {
-            res.send({ response: { result } });
+  handler: [
+    async (req, res) => {
+      try {
+        const { name = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        const usedName = name ? addJokerToFilterValue(name) : "%";
+        const persistence = getCurrentSystem()?.getDefaultPersistence();
+        if (persistence) {
+          const response = await persistence.tables.store.select({
+            name: usedName,
+          });
+          const { result, error } = response || {};
+          if (error) {
+            res.send({ error });
           } else {
-            res.send({ error: `Received undefined result from select.` });
+            if (result) {
+              res.send({ response: { result } });
+            } else {
+              res.send({ error: `Received undefined result from select.` });
+            }
           }
+        } else {
+          res.send({
+            error: "Currently is no default persistence available.",
+          });
         }
-      } else {
-        res.send({
-          error: "Currently is no default persistence available.",
-        });
+      } catch (error) {
+        res.send({ error: error.toString() });
       }
-    } catch (error) {
-      res.send({ error: error.toString() });
-    }
-  },
+    },
+  ],
 });
 
 allServices.push({
@@ -60,45 +62,47 @@ allServices.push({
     "string"
   ),
   name: "Insert a new store.",
-  handler: async (req, res) => {
-    try {
-      const store: Row_Store = req.body;
-      const { store_id = undefined } =
-        typeof req.query === "object" ? req.query : {};
-      if (store_id) {
-        const persistence = getCurrentSystem()?.getDefaultPersistence();
-        if (persistence) {
-          const response = await persistence.tables.store.insert({
-            ...store,
-            ...initialMasterdataFields(),
-          });
-          const { result, error } = response || {};
-          if (error) {
-            res.send({ error });
-          } else {
-            if (result) {
-              res.send({ response: { result } });
+  handler: [
+    async (req, res) => {
+      try {
+        const store: Row_Store = req.body;
+        const { store_id = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        if (store_id) {
+          const persistence = getCurrentSystem()?.getDefaultPersistence();
+          if (persistence) {
+            const response = await persistence.tables.store.insert({
+              ...store,
+              ...initialMasterdataFields(),
+            });
+            const { result, error } = response || {};
+            if (error) {
+              res.send({ error });
             } else {
-              res.send({
-                error: `Received undefined result from insert store.`,
-              });
+              if (result) {
+                res.send({ response: { result } });
+              } else {
+                res.send({
+                  error: `Received undefined result from insert store.`,
+                });
+              }
             }
+          } else {
+            res.send({
+              error: "Currently is no default persistence available.",
+            });
           }
         } else {
           res.send({
-            error: "Currently is no default persistence available.",
+            error:
+              "This url needs a query parameter: ...?store_id=<id of the store>",
           });
         }
-      } else {
-        res.send({
-          error:
-            "This url needs a query parameter: ...?store_id=<id of the store>",
-        });
+      } catch (error) {
+        res.send({ error: error.toString() });
       }
-    } catch (error) {
-      res.send({ error: error.toString() });
-    }
-  },
+    },
+  ],
 });
 
 allServices.push({
@@ -110,48 +114,50 @@ allServices.push({
     "string"
   ),
   name: "Update an existing store.",
-  handler: async (req, res) => {
-    try {
-      const store: Row_Store = req.body;
-      const { store_id = undefined } =
-        typeof req.query === "object" ? req.query : {};
-      if (store_id) {
-        const persistence = getCurrentSystem()?.getDefaultPersistence();
-        if (persistence) {
-          const response = await persistence.tables.store.update({
-            ...store,
-            ...without(
-              without(initialMasterdataFields(), "created_at"),
-              "dataset_version"
-            ),
-          });
-          const { result, error } = response || {};
-          if (error) {
-            res.send({ error });
-          } else {
-            if (result) {
-              res.send({ response: { result } });
+  handler: [
+    async (req, res) => {
+      try {
+        const store: Row_Store = req.body;
+        const { store_id = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        if (store_id) {
+          const persistence = getCurrentSystem()?.getDefaultPersistence();
+          if (persistence) {
+            const response = await persistence.tables.store.update({
+              ...store,
+              ...without(
+                without(initialMasterdataFields(), "created_at"),
+                "dataset_version"
+              ),
+            });
+            const { result, error } = response || {};
+            if (error) {
+              res.send({ error });
             } else {
-              res.send({
-                error: `Received undefined result from update store.`,
-              });
+              if (result) {
+                res.send({ response: { result } });
+              } else {
+                res.send({
+                  error: `Received undefined result from update store.`,
+                });
+              }
             }
+          } else {
+            res.send({
+              error: "Currently is no default persistence available.",
+            });
           }
         } else {
           res.send({
-            error: "Currently is no default persistence available.",
+            error:
+              "This url needs a query parameter: ...?store_id=<id of the store>",
           });
         }
-      } else {
-        res.send({
-          error:
-            "This url needs a query parameter: ...?store_id=<id of the store>",
-        });
+      } catch (error) {
+        res.send({ error: error.toString() });
       }
-    } catch (error) {
-      res.send({ error: error.toString() });
-    }
-  },
+    },
+  ],
 });
 
 export const services = allServices;
