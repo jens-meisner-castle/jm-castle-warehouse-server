@@ -1,4 +1,9 @@
+import {
+  ApiServiceResponse,
+  UnknownErrorCode,
+} from "jm-castle-warehouse-types/build";
 import { services as articleServices } from "./article/_services.mjs";
+import { services as authServices } from "./auth/_services.mjs";
 import { services as emissionServices } from "./emission/_services.mjs";
 import { services as exampleServices } from "./example/_services.mjs";
 import { services as imageContentServices } from "./imageContent/_services.mjs";
@@ -8,6 +13,7 @@ import { services as storeServices } from "./store/_services.mjs";
 import { services as storeSectionServices } from "./storeSection/_services.mjs";
 import { services as systemServices } from "./system/_services.mjs";
 import { ApiService, getSerializableServices } from "./Types.mjs";
+import { handleError } from "./Utils.mjs";
 
 const allServices: ApiService[] = [];
 
@@ -20,18 +26,23 @@ allServices.push(...exampleServices);
 allServices.push(...emissionServices);
 allServices.push(...imageReferenceServices);
 allServices.push(...imageContentServices);
+allServices.push(...authServices);
 
 allServices.push({
   url: "/",
   method: "GET",
+  neededRole: "internal",
   name: "Get available services.",
   handler: [
     async (req, res) => {
       try {
         const services = getSerializableServices(allServices);
-        res.send({ response: { services } });
+        const apiResponse: ApiServiceResponse<{ services: typeof services }> = {
+          response: { services },
+        };
+        return res.send(apiResponse);
       } catch (error) {
-        res.send({ error: error.toString() });
+        return handleError(res, UnknownErrorCode, error.toString());
       }
     },
   ],

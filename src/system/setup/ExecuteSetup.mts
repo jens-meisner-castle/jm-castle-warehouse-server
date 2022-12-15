@@ -3,7 +3,7 @@ import {
   AllTables,
   MariaDbClient,
 } from "../../persistence/maria-db/MariaDb.mjs";
-import { getCurrentSystem } from "../status/System.mjs";
+import { Persistence } from "../../persistence/Types.mjs";
 
 const getResultFromCreateTableOrDbResponse = (
   response: any | undefined
@@ -24,12 +24,8 @@ const getResultFromCreateTableOrDbResponse = (
   return JSON.parse(jsonStr);
 };
 
-export const executeSetup = async () => {
+export const executeSetup = async (persistence: Persistence) => {
   // Create a database
-  const persistence = getCurrentSystem()?.getDefaultPersistence();
-  if (!persistence) {
-    throw new Error("Currently is no default persistence available.");
-  }
   if (persistence.type() !== "maria-db") {
     throw new Error(
       "Currently is a a setup for a MariaDB only. The default persistence is different."

@@ -3,7 +3,9 @@ import {
   PersistentRow,
   Row_Article as Row,
   SelectResponse,
+  SqlDataErrorCode,
 } from "jm-castle-warehouse-types";
+import { SqlError } from "mariadb";
 import { without } from "../../../utils/Basic.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
 import { TableArticle } from "../tables/Article.mjs";
@@ -23,7 +25,12 @@ export const insert = async (
     const { affectedRows } = response || {};
     return { result: { cmd, affectedRows, data: values } };
   } catch (error) {
-    return { error: error.toString() };
+    const { errno } = (error as SqlError) || {};
+    return {
+      error: error.toString(),
+      errorCode: SqlDataErrorCode,
+      errorDetails: { sqlErrorCode: errno },
+    };
   }
 };
 

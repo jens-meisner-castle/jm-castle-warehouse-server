@@ -1,15 +1,25 @@
-import { Row_ImageReference } from "jm-castle-warehouse-types/build";
+import {
+  ApiServiceResponse,
+  BadRequestMissingParameterCode,
+  Row_ImageReference,
+  UnknownErrorCode,
+} from "jm-castle-warehouse-types/build";
 import { getStrictSingleQueryParametersSchema } from "../../json-schema/parameters.mjs";
-import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
 import { ApiService } from "../Types.mjs";
+import {
+  handleError,
+  handleErrorOrUndefinedResult,
+  withDefaultPersistence,
+} from "../Utils.mjs";
 
 const allServices: ApiService[] = [];
 
 allServices.push({
   url: "/image-ref/insert",
   method: "POST",
+  neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
     "image_id",
     "The id of the image reference to create.",
@@ -23,37 +33,37 @@ allServices.push({
         const { image_id = undefined } =
           typeof req.query === "object" ? req.query : {};
         if (image_id) {
-          const persistence = getCurrentSystem()?.getDefaultPersistence();
-          if (persistence) {
+          withDefaultPersistence(res, async (persistence) => {
             const response = await persistence.tables.imageReference.insert({
               ...imageRef,
               ...initialMasterdataFields(),
             });
-            const { result, error } = response || {};
-            if (error) {
-              res.send({ error });
-            } else {
-              if (result) {
-                res.send({ response: { result } });
-              } else {
-                res.send({
-                  error: `Received undefined result from insert image reference.`,
-                });
-              }
+            const { result, error, errorCode, errorDetails } = response || {};
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                result,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
             }
-          } else {
-            res.send({
-              error: "Currently is no default persistence available.",
-            });
-          }
-        } else {
-          res.send({
-            error:
-              "This url needs a query parameter: ...?image_id=<id of the image>",
+            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+              response: { result },
+            };
+            return res.send(apiResponse);
           });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?image_id=<id of the image>"
+          );
         }
       } catch (error) {
-        res.send({ error: error.toString() });
+        return handleError(res, UnknownErrorCode, error.toString());
       }
     },
   ],
@@ -62,6 +72,7 @@ allServices.push({
 allServices.push({
   url: "/image-ref/update",
   method: "POST",
+  neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
     "image_id",
     "The id of the image to update.",
@@ -75,40 +86,41 @@ allServices.push({
         const { image_id = undefined } =
           typeof req.query === "object" ? req.query : {};
         if (image_id) {
-          const persistence = getCurrentSystem()?.getDefaultPersistence();
-          if (persistence) {
+          withDefaultPersistence(res, async (persistence) => {
             const response = await persistence.tables.imageReference.update({
               ...imageRef,
               ...without(
-                without(initialMasterdataFields(), "created_at"),
+                initialMasterdataFields(),
+                "created_at",
                 "dataset_version"
               ),
             });
-            const { result, error } = response || {};
-            if (error) {
-              res.send({ error });
-            } else {
-              if (result) {
-                res.send({ response: { result } });
-              } else {
-                res.send({
-                  error: `Received undefined result from update image reference.`,
-                });
-              }
+            const { result, error, errorCode, errorDetails } = response || {};
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                result,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
             }
-          } else {
-            res.send({
-              error: "Currently is no default persistence available.",
-            });
-          }
-        } else {
-          res.send({
-            error:
-              "This url needs a query parameter: ...?image_id=<id of the image>",
+            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+              response: { result },
+            };
+            return res.send(apiResponse);
           });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?image_id=<id of the image>"
+          );
         }
       } catch (error) {
-        res.send({ error: error.toString() });
+        return handleError(res, UnknownErrorCode, error.toString());
       }
     },
   ],
@@ -117,48 +129,49 @@ allServices.push({
 allServices.push({
   url: "/image-ref/select",
   method: "GET",
+  neededRole: "external",
   parameters: getStrictSingleQueryParametersSchema(
     "image_id",
     "The id of the image ref to search.",
     "string"
   ),
-  name: "Select single image by id.",
+  name: "Select single image reference by id.",
   handler: [
     async (req, res) => {
       try {
         const { image_id = undefined } =
           typeof req.query === "object" ? req.query : {};
         if (image_id) {
-          const persistence = getCurrentSystem()?.getDefaultPersistence();
-          if (persistence) {
+          withDefaultPersistence(res, async (persistence) => {
             const response = await persistence.tables.imageReference.select({
               image_id,
             });
-            const { result, error } = response || {};
-            if (error) {
-              res.send({ error });
-            } else {
-              if (result) {
-                res.send({ response: { result } });
-              } else {
-                res.send({
-                  error: `Received undefined result from image select.`,
-                });
-              }
+            const { result, error, errorCode, errorDetails } = response || {};
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                result,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
             }
-          } else {
-            res.send({
-              error: "Currently is no default persistence available.",
-            });
-          }
-        } else {
-          res.send({
-            error:
-              "This url needs a query parameter: ...?image_id=<id of the image reference>",
+            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+              response: { result },
+            };
+            return res.send(apiResponse);
           });
+        } else {
+          handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?image_id=<id of the image reference>"
+          );
         }
       } catch (error) {
-        res.send({ error: error.toString() });
+        return handleError(res, UnknownErrorCode, error.toString());
       }
     },
   ],

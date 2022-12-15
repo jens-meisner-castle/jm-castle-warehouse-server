@@ -8,13 +8,11 @@ import {
   MariaDbClient,
 } from "../../persistence/maria-db/MariaDb.mjs";
 import { columns } from "../../persistence/maria-db/Table.mjs";
-import { getCurrentSystem } from "../status/System.mjs";
+import { Persistence } from "../../persistence/Types.mjs";
 
-export const getSystemSetupStatus = async (): Promise<SystemSetupStatus> => {
-  const persistence = getCurrentSystem()?.getDefaultPersistence();
-  if (!persistence) {
-    throw new Error("Currently is no default persistence available.");
-  }
+export const getSystemSetupStatus = async (
+  persistence: Persistence
+): Promise<SystemSetupStatus> => {
   if (persistence.type() !== "maria-db") {
     throw new Error(
       "Currently is a a setup for a MariaDB only. The default persistence is different."

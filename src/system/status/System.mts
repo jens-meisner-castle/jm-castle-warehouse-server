@@ -2,12 +2,15 @@ import fs from "fs";
 import {
   CheckedConfiguration,
   Configuration,
+  DefaultUserSpec,
   FilesystemStoreSpec,
   ImageStoreSpec,
+  isUserRole,
   MailingSpec,
   PersistenceSpec,
   SystemSpec,
   SystemStatus,
+  UserRoles,
 } from "jm-castle-warehouse-types";
 import { DateTime } from "luxon";
 import {
@@ -75,6 +78,32 @@ export class CastleWarehouse {
     }
     await this.setupPersistence();
     await this.setupImageStore();
+  };
+
+  public authenticateUser = (
+    username: string,
+    password: string
+  ): undefined | false | { roles: string[] } => {
+    const { user } = this.validConfig;
+    const userSettings = user ? user[username] : undefined;
+    if (!userSettings) {
+      return undefined;
+    }
+    const { password: psw, roles } = userSettings;
+    if (password !== psw) {
+      return false;
+    }
+    return { roles };
+  };
+
+  public getUserRoles = (username: string): undefined | string[] => {
+    const { user } = this.validConfig;
+    const userSettings = user ? user[username] : undefined;
+    if (!userSettings) {
+      return undefined;
+    }
+    const { roles } = userSettings;
+    return roles;
   };
 
   public getImageStorePath = () => this.validConfig.imageStore.path;
@@ -199,6 +228,62 @@ export class CastleWarehouse {
     }
     validConfig.system = spec;
     return true;
+  };
+
+  private checkUserSpec = (
+    spec: DefaultUserSpec,
+    validConfig: Configuration,
+    errors: string[]
+  ): boolean => {
+    if (typeof spec !== "object") {
+      errors.push(
+        `Bad user spec: If used the value must be an object. Found type "${typeof spec}".`
+      );
+      return false;
+    }
+    const localErrors: string[] = [];
+    const userIds = Object.keys(spec);
+    userIds.find((userId) => {
+      const settings = spec[userId];
+      if (typeof settings !== "object") {
+        localErrors.push(
+          `Bad user spec: The value of each key within the user spec must be an object. For user id <${userId}> found type "${typeof settings}".`
+        );
+        return true;
+      }
+      const { password, roles } = settings;
+      if (typeof password !== "string") {
+        localErrors.push(
+          `Bad user spec: The property "password" must have a string as value. For user id <${userId}> found type "${typeof password}".`
+        );
+        return true;
+      }
+      if (!Array.isArray(roles)) {
+        localErrors.push(
+          `Bad user spec: The property "roles" must have an array of strings as value. For user id <${userId}> found type "${typeof roles}".`
+        );
+        return true;
+      }
+      roles.find((role) => {
+        if (typeof role !== "string" || !isUserRole(role)) {
+          localErrors.push(
+            `Bad user spec: The property "roles" must have an array of values of: ${Object.keys(
+              UserRoles
+            ).join(", ")}. For user id <${userId}> found role "${role}".`
+          );
+          return true;
+        }
+        return false;
+      });
+      return false;
+    });
+    if (localErrors.length) {
+      errors.push(...localErrors);
+      return false;
+    } else {
+      validConfig.user = spec;
+      return true;
+    }
   };
 
   private checkImageStoreSpec = (
@@ -327,7 +412,7 @@ export class CastleWarehouse {
     configuration: Configuration
   ): { validConfig: CheckedConfiguration; errors: string[] | undefined } => {
     try {
-      const { persistence, mail, system, imageStore } = configuration;
+      const { persistence, mail, system, imageStore, user } = configuration;
       const validConfig: CheckedConfiguration = {
         isValid: true,
         system: {
@@ -350,6 +435,7 @@ export class CastleWarehouse {
       };
       const errors: string[] = [];
       system && this.checkSystemSpec(system, validConfig, errors);
+      user && this.checkUserSpec(user, validConfig, errors);
       imageStore && this.checkImageStoreSpec(imageStore, validConfig, errors);
       persistence &&
         Object.keys(persistence).forEach((k) => {
@@ -446,5 +532,6 @@ export class CastleWarehouse {
     };
   };
 
-  public getDefaultPersistence = () => this.defaultPersistence;
+  public getDefaultPersistence = (): Persistence | undefined =>
+    this.defaultPersistence;
 }

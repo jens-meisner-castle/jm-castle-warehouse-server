@@ -2,21 +2,28 @@ import { RequestHandler } from "express";
 import {
   QueryParametersSchema,
   SerializableService,
+  UserRole,
 } from "jm-castle-warehouse-types";
+
+export type ExtendedParams = Record<string, any> & {
+  verifiedUser?: { user: string; roles: string[]; token: string };
+};
+export type CastleRequestHandler = RequestHandler<
+  ExtendedParams,
+  any,
+  any,
+  any,
+  Record<string, any>
+>;
 
 export interface ApiService {
   url: string;
   parameters?: QueryParametersSchema;
   method: "GET" | "POST";
   scope?: "public" | "private";
+  neededRole: UserRole | "none";
   name: string;
-  handler: RequestHandler<
-    Record<string, any>,
-    any,
-    any,
-    any,
-    Record<string, any>
-  >[];
+  handler: CastleRequestHandler[];
 }
 
 export const getSerializableServices = (services: ApiService[]) => {
@@ -28,6 +35,7 @@ export const getSerializableServices = (services: ApiService[]) => {
       parameters: service.parameters,
       name: service.name,
       scope: service.scope,
+      neededRole: service.neededRole,
     });
   });
   return serializable;

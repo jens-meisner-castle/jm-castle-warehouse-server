@@ -1,19 +1,29 @@
-import { Row_StoreSection } from "jm-castle-warehouse-types/build";
+import {
+  ApiServiceResponse,
+  BadRequestMissingParameterCode,
+  Row_StoreSection,
+  UnknownErrorCode,
+} from "jm-castle-warehouse-types/build";
 import {
   getOptionalSingleQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
 } from "../../json-schema/parameters.mjs";
-import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { addJokerToFilterValue } from "../../utils/Sql.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
 import { ApiService } from "../Types.mjs";
+import {
+  handleError,
+  handleErrorOrUndefinedResult,
+  withDefaultPersistence,
+} from "../Utils.mjs";
 
 const allServices: ApiService[] = [];
 
 allServices.push({
   url: "/store-section/insert",
   method: "POST",
+  neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
     "section_id",
     "The id of the section to create.",
@@ -23,41 +33,41 @@ allServices.push({
   handler: [
     async (req, res) => {
       try {
-        const section: Row_StoreSection = req.body;
+        const storeSection: Row_StoreSection = req.body;
         const { section_id = undefined } =
           typeof req.query === "object" ? req.query : {};
         if (section_id) {
-          const persistence = getCurrentSystem()?.getDefaultPersistence();
-          if (persistence) {
+          withDefaultPersistence(res, async (persistence) => {
             const response = await persistence.tables.storeSection.insert({
-              ...section,
+              ...storeSection,
               ...initialMasterdataFields(),
             });
-            const { result, error } = response || {};
-            if (error) {
-              res.send({ error });
-            } else {
-              if (result) {
-                res.send({ response: { result } });
-              } else {
-                res.send({
-                  error: `Received undefined result from insert section.`,
-                });
-              }
+            const { result, error, errorCode, errorDetails } = response || {};
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                result,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
             }
-          } else {
-            res.send({
-              error: "Currently is no default persistence available.",
-            });
-          }
-        } else {
-          res.send({
-            error:
-              "This url needs a query parameter: ...?section_id=<id of the section>",
+            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+              response: { result },
+            };
+            return res.send(apiResponse);
           });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?section_id=<id of the section>"
+          );
         }
       } catch (error) {
-        res.send({ error: error.toString() });
+        return handleError(res, UnknownErrorCode, error.toString());
       }
     },
   ],
@@ -66,6 +76,7 @@ allServices.push({
 allServices.push({
   url: "/store-section/update",
   method: "POST",
+  neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
     "section_id",
     "The id of the section to update.",
@@ -75,44 +86,45 @@ allServices.push({
   handler: [
     async (req, res) => {
       try {
-        const section: Row_StoreSection = req.body;
+        const storeSection: Row_StoreSection = req.body;
         const { section_id = undefined } =
           typeof req.query === "object" ? req.query : {};
         if (section_id) {
-          const persistence = getCurrentSystem()?.getDefaultPersistence();
-          if (persistence) {
+          withDefaultPersistence(res, async (persistence) => {
             const response = await persistence.tables.storeSection.update({
-              ...section,
+              ...storeSection,
               ...without(
-                without(initialMasterdataFields(), "created_at"),
+                initialMasterdataFields(),
+                "created_at",
                 "dataset_version"
               ),
             });
-            const { result, error } = response || {};
-            if (error) {
-              res.send({ error });
-            } else {
-              if (result) {
-                res.send({ response: { result } });
-              } else {
-                res.send({
-                  error: `Received undefined result from update section.`,
-                });
-              }
+            const { result, error, errorCode, errorDetails } = response || {};
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                result,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
             }
-          } else {
-            res.send({
-              error: "Currently is no default persistence available.",
-            });
-          }
-        } else {
-          res.send({
-            error:
-              "This url needs a query parameter: ...?section_id=<id of the section>",
+            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+              response: { result },
+            };
+            return res.send(apiResponse);
           });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?section_id=<id of the section>"
+          );
         }
       } catch (error) {
-        res.send({ error: error.toString() });
+        return handleError(res, UnknownErrorCode, error.toString());
       }
     },
   ],
@@ -121,6 +133,7 @@ allServices.push({
 allServices.push({
   url: "/store-section/select",
   method: "GET",
+  neededRole: "external",
   parameters: getOptionalSingleQueryParametersSchema(
     "name",
     "A fragment of the name to search.",
@@ -133,28 +146,29 @@ allServices.push({
         const { name = undefined } =
           typeof req.query === "object" ? req.query : {};
         const usedName = name ? addJokerToFilterValue(name) : "%";
-        const persistence = getCurrentSystem()?.getDefaultPersistence();
-        if (persistence) {
+        withDefaultPersistence(res, async (persistence) => {
           const response = await persistence.tables.storeSection.select({
             name: usedName,
           });
-          const { result, error } = response || {};
-          if (error) {
-            res.send({ error });
-          } else {
-            if (result) {
-              res.send({ response: { result } });
-            } else {
-              res.send({ error: `Received undefined result from select.` });
-            }
+          const { result, error, errorCode, errorDetails } = response || {};
+          if (
+            handleErrorOrUndefinedResult(
+              res,
+              result,
+              errorCode || "-1",
+              error,
+              errorDetails
+            )
+          ) {
+            return;
           }
-        } else {
-          res.send({
-            error: "Currently is no default persistence available.",
-          });
-        }
+          const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+            response: { result },
+          };
+          return res.send(apiResponse);
+        });
       } catch (error) {
-        res.send({ error: error.toString() });
+        return handleError(res, UnknownErrorCode, error.toString());
       }
     },
   ],

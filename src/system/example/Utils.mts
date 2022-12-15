@@ -3,6 +3,7 @@ import fs from "fs";
 import http from "http";
 import https from "https";
 import {
+  ApiServiceResponse,
   InsertResponse,
   Row_Article,
   Row_ImageContent,
@@ -10,7 +11,9 @@ import {
   Row_Receipt,
   Row_Store,
   Row_StoreSection,
+  UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
+import { Persistence } from "../../persistence/Types.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { getExtension, getFilename } from "../../utils/File.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
@@ -26,7 +29,9 @@ export type ExampleCreationResult =
 
 export const createDataFromExample = async (
   example: Example,
-  system: CastleWarehouse
+  system: CastleWarehouse,
+  persistence: Persistence,
+  token: string
 ): Promise<ExampleCreationResult> => {
   const at_seconds = Math.ceil(Date.now() / 1000);
   const articleRows: Row_Article[] = [];
@@ -88,168 +93,156 @@ export const createDataFromExample = async (
       });
     });
   });
-  const persistence = system.getDefaultPersistence();
-  if (persistence) {
-    try {
-      const articleResults = await Promise.all(
-        articleRows.map((row) => {
-          return new Promise<InsertResponse<Row_Article>>((resolve, reject) => {
-            const { article_id, article_img_ref, name, count_unit } = row;
+  try {
+    const articleResults = await Promise.all(
+      articleRows.map((row) => {
+        return new Promise<InsertResponse<Row_Article>>((resolve, reject) => {
+          const { article_id } = row;
+          const certificate = system.getCACertificate();
+          const options: https.RequestOptions = {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            ca: certificate || undefined,
+            rejectUnauthorized: !!certificate,
+          };
+          const url = `${system.getOwnApiUrl()}/article/insert?article_id=${article_id}`;
+          const request = https.request(url, options, (res) => {
+            const chunks: Buffer[] = [];
+            res.on("data", (chunk: Buffer) => {
+              chunks.push(chunk);
+            });
+            res.on("end", () => {
+              let responseString = "";
+              try {
+                chunks.forEach((chunk) => {
+                  responseString = responseString + chunk.toString("utf-8");
+                });
+                const responseObj: ApiServiceResponse<
+                  InsertResponse<Row_Article>
+                > = JSON.parse(responseString);
+                const { response, error, errorCode, errorDetails } =
+                  responseObj;
+                if (error) {
+                  return resolve({ error, errorCode, errorDetails });
+                }
+                resolve(response);
+              } catch (error) {
+                resolve({
+                  error: error.toString(),
+                  errorCode: UnknownErrorCode,
+                });
+              }
+            });
+          });
+
+          request.on("error", function (error) {
+            console.error(error);
+            resolve({ error: error.toString() });
+          });
+          request.write(JSON.stringify(row));
+          request.end();
+        });
+      })
+    );
+    const storeResults = await Promise.all(
+      storeRows.map((row) => persistence.tables.store.insert(row))
+    );
+    const sectionResults = await Promise.all(
+      storeSectionRows.map((row) => persistence.tables.storeSection.insert(row))
+    );
+    const receiptResults = await Promise.all(
+      receiptRows.map((row) => persistence.tables.receipt.insert(row))
+    );
+    const imageRefResults = await Promise.all(
+      imageRefRows.map((row) => persistence.tables.imageReference.insert(row))
+    );
+    const imageContentResults = await Promise.all(
+      imageSources.map((source) => {
+        return new Promise<InsertResponse<Row_ImageContent>>(
+          (resolve, reject) => {
+            const { image_id, image_extension, path } = source;
+            const formData = new FormData();
+            formData.append("image_id", image_id);
+            formData.append("image_extension", image_extension);
+            formData.append("file", fs.createReadStream(path));
+
             const certificate = system.getCACertificate();
             const options: https.RequestOptions = {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                ...formData.getHeaders(),
+                Authorization: `Bearer ${token}`,
+              },
               ca: certificate || undefined,
               rejectUnauthorized: !!certificate,
             };
-            const url = `${system.getOwnApiUrl()}/article/insert?article_id=${article_id}`;
-            const request = https.request(url, options);
-            request.write(JSON.stringify(row));
-            request.on("data", function (data) {
-              console.log("data", data);
-            });
-            request.on("end", function () {
-              console.log("ended");
-              resolve({
-                result: {
-                  cmd: "...",
-                  affectedRows: 1,
-                  data: {
-                    ...row,
-                  },
-                },
-              });
-            });
-            request.on("error", function (error) {
-              console.error(error);
-              resolve({ error: error.toString() });
-            });
-            request.end(() => {
-              console.log("request ended");
-              resolve({
-                result: {
-                  cmd: "...",
-                  affectedRows: 1,
-                  data: {
-                    ...row,
-                  },
-                },
-              });
-            });
-          });
-        })
-      );
-      const storeResults = await Promise.all(
-        storeRows.map((row) => persistence.tables.store.insert(row))
-      );
-      const sectionResults = await Promise.all(
-        storeSectionRows.map((row) =>
-          persistence.tables.storeSection.insert(row)
-        )
-      );
-      const receiptResults = await Promise.all(
-        receiptRows.map((row) => persistence.tables.receipt.insert(row))
-      );
-      const imageRefResults = await Promise.all(
-        imageRefRows.map((row) => persistence.tables.imageReference.insert(row))
-      );
-      const imageContentResults = await Promise.all(
-        imageSources.map((source) => {
-          return new Promise<InsertResponse<Row_ImageContent>>(
-            (resolve, reject) => {
-              const { image_id, image_extension, path } = source;
-              const formData = new FormData();
-              formData.append("image_id", image_id);
-              formData.append("image_extension", image_extension);
-              formData.append("file", fs.createReadStream(path));
-
-              const certificate = system.getCACertificate();
-              const options: https.RequestOptions = {
-                method: "POST",
-                headers: formData.getHeaders(),
-                ca: certificate || undefined,
-                rejectUnauthorized: !!certificate,
-              };
-              const url = `${system.getOwnApiUrl()}/image-content/insert?image_id=${image_id}`;
-              const chunks: Buffer[] = [];
-              const request = https.request(
-                url,
-                options,
-                (response: http.IncomingMessage) => {
-                  response.on("data", (chunk: Buffer) => {
-                    chunks.push(chunk);
-                  });
-                  response.on("end", () => {
-                    let responseString = "";
-                    try {
-                      chunks.forEach((chunk) => {
-                        responseString =
-                          responseString + chunk.toString("utf-8");
-                      });
-                      const responseObj: {
-                        response: InsertResponse<Row_ImageContent>;
-                      } = JSON.parse(responseString);
-                      const { response } = responseObj;
-                      const { error, result } = response;
-                      const { cmd, affectedRows, data } = result || {};
-                      if (error) {
-                        resolve({
-                          error: `Received error from "image-content/insert": ${error}`,
-                        });
-                      } else {
-                        console.log("resolve with", {
-                          result: {
-                            cmd,
-                            affectedRows,
-                            data,
-                          },
-                        });
-                        resolve({
-                          result: {
-                            cmd,
-                            affectedRows,
-                            data,
-                          },
-                        });
-                      }
-                    } catch (error) {
-                      resolve({
-                        error: `Catched error when reading response from "image-content/insert": ${error.toString()}`,
+            const url = `${system.getOwnApiUrl()}/image-content/insert?image_id=${image_id}`;
+            const chunks: Buffer[] = [];
+            const request = https.request(
+              url,
+              options,
+              (response: http.IncomingMessage) => {
+                response.on("data", (chunk: Buffer) => {
+                  chunks.push(chunk);
+                });
+                response.on("end", () => {
+                  let responseString = "";
+                  try {
+                    chunks.forEach((chunk) => {
+                      responseString = responseString + chunk.toString("utf-8");
+                    });
+                    const responseObj: ApiServiceResponse<
+                      InsertResponse<Row_ImageContent>
+                    > = JSON.parse(responseString);
+                    const { response, error, errorCode, errorDetails } =
+                      responseObj;
+                    if (error) {
+                      return resolve({
+                        error,
+                        errorCode,
+                        errorDetails,
                       });
                     }
-                  });
-                }
-              );
-              request.on("error", function (error) {
-                console.error(error);
-                resolve({ error: error.toString() });
-              });
-              formData.pipe(request);
-            }
-          );
-        })
-      );
-      const allErrors: string[] = [];
-      articleResults.forEach((r) => r.error && allErrors.push(r.error));
-      storeResults.forEach((r) => r.error && allErrors.push(r.error));
-      sectionResults.forEach((r) => r.error && allErrors.push(r.error));
-      receiptResults.forEach((r) => r.error && allErrors.push(r.error));
-      imageRefResults.forEach((r) => r.error && allErrors.push(r.error));
-      imageContentResults.forEach((r) => r.error && allErrors.push(r.error));
-      if (allErrors.length) {
-        return {
-          error: `Received errors when inserting rows: ${allErrors.join("\n")}`,
-        };
-      }
+                    resolve(response);
+                  } catch (error) {
+                    resolve({
+                      error: error.toString(),
+                      errorCode: UnknownErrorCode,
+                    });
+                  }
+                });
+              }
+            );
+            request.on("error", function (error) {
+              console.error(error);
+              resolve({ error: error.toString(), errorCode: UnknownErrorCode });
+            });
+            formData.pipe(request);
+          }
+        );
+      })
+    );
+    const allErrors: string[] = [];
+    articleResults.forEach((r) => r.error && allErrors.push(r.error));
+    storeResults.forEach((r) => r.error && allErrors.push(r.error));
+    sectionResults.forEach((r) => r.error && allErrors.push(r.error));
+    receiptResults.forEach((r) => r.error && allErrors.push(r.error));
+    imageRefResults.forEach((r) => r.error && allErrors.push(r.error));
+    imageContentResults.forEach((r) => r.error && allErrors.push(r.error));
+    if (allErrors.length) {
       return {
-        result: { storeRows, storeSectionRows, articleRows, receiptRows },
-      };
-    } catch (error) {
-      return {
-        error: `Received error when inserting rows: ${error.toString()}`,
+        error: `Received errors when inserting rows: ${allErrors.join("\n")}`,
       };
     }
-  } else {
-    return { error: "No default persistence is defined." };
+    return {
+      result: { storeRows, storeSectionRows, articleRows, receiptRows },
+    };
+  } catch (error) {
+    return {
+      error: `Received error when inserting rows: ${error.toString()}`,
+    };
   }
 };

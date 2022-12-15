@@ -1,5 +1,46 @@
 {
-  "system": { "name": "empty castle-warehouse" },
-  "persistence": {},
-  "imageStore": { "type": "file-system", "path": "store/image" }
+  "system": {
+    "name": "castle-warehouse",
+    "host": "0.0.0.0",
+    "port": 53001,
+    "certs": {
+      "ca": "cert/optional-your-CA.pem",
+      "hostCert": "cert/your.crt",
+      "hostKey": "cert/your.key"
+    }
+  },
+  "user": {
+    "castle": {
+      "password": "castle",
+      "roles": ["admin", "external", "internal"]
+    }
+  },
+  "persistence": {
+    "serverPersistence": {
+      "type": "maria-db",
+      "isDefault": true,
+      "database": "castle_warehouse",
+      "host": "0.0.0.0",
+      "port": 3306,
+      "user": "root",
+      "password": "xxx"
+    }
+  },
+  "imageStore": {
+    "type": "file-system",
+    "path": "store/image",
+    "maxWidth": 400,
+    "maxHeight": 400
+  },
+  "mail": {
+    "defaultSender": {
+      "type": "smtp",
+      "isDefault": true,
+      "host": "your.mail.host",
+      "port": 465,
+      "user": "your.mail.user",
+      "password": "xxx",
+      "defaultReceivers": [{ "address": "any.one@any.where" }]
+    }
+  }
 }
