@@ -7,7 +7,7 @@
     "noImplicitAny": true,
     "moduleResolution": "NodeNext",
     "sourceMap": true,
-    "declaration": false,
+    "declaration": true,
     "outDir": "dist",
     "baseUrl": "./",
     "lib": ["ES6", "dom"],

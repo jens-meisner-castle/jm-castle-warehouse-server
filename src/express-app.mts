@@ -26,7 +26,8 @@ export const newExpressApp = (
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
-  app.use(express.static("./client"));
+  const clientPath = system.clientPath();
+  app.use(express.static(clientPath));
   const imageStorePath = system.getImageStorePath();
   app.use(
     imageStorePath.startsWith("/") ? imageStorePath : `/${imageStorePath}`,

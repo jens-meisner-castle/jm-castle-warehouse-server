@@ -61,6 +61,8 @@ export class CastleWarehouse {
   private serverCert: Buffer;
   private serverKey: Buffer;
 
+  public clientPath = () => this.validConfig.system.client?.path || "./client";
+
   public start = async () => {
     await this.setupMailSenders();
     if (this.defaultMailSender) {
@@ -182,7 +184,7 @@ export class CastleWarehouse {
     validConfig: Configuration,
     errors: string[]
   ): boolean => {
-    const { name, host, port, certs } = spec;
+    const { name, host, port, certs, client } = spec;
     if (name && typeof name !== "string") {
       errors.push(
         `Bad system spec: If used the property "name" must have a string as value. Found type "${typeof name}".`
@@ -223,6 +225,19 @@ export class CastleWarehouse {
     if (typeof hostKey !== "string") {
       errors.push(
         `Bad system spec: The property "hostKey" (within "certs") must have a string as value. Found type "${typeof name}".`
+      );
+      return false;
+    }
+    if (typeof client !== "object") {
+      errors.push(
+        `Bad system spec: The property "client" must have an object as value. Found type "${typeof name}".`
+      );
+      return false;
+    }
+    const { path } = client;
+    if (path && typeof path !== "string") {
+      errors.push(
+        `Bad system spec: If used the property "path" (within "client") must have a string as value. Found type "${typeof name}".`
       );
       return false;
     }
