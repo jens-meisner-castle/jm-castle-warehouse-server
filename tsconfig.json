@@ -8,7 +8,7 @@
     "moduleResolution": "NodeNext",
     "sourceMap": true,
     "declaration": true,
-    "outDir": "dist",
+    "outDir": "build",
     "baseUrl": "./",
     "lib": ["ES6", "dom"],
     "skipLibCheck": true

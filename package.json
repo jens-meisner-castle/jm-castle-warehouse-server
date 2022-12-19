@@ -1,11 +1,20 @@
 {
   "name": "jm-castle-warehouse-server",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
+  "module": "./build",
+  "files": [
+    "build",
+    "src"
+  ],
   "exports": {
+    "./build": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.js"
+    },
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./build/index.d.ts",
+      "import": "./build/index.js"
     }
   },
   "private": false,
@@ -13,7 +22,7 @@
     "prebuild": "eslint \"./src/**\"",
     "build": "tsc --project tsconfig.json",
     "buildmodule": "rollup -c",
-    "start": "node --experimental-modules ./dist/start.mjs",
+    "start": "node --experimental-modules ./build/start.mjs",
     "dev": "nodemon --ext '*.mts' -x \"npm run build && npm run start \"",
     "dev:serve": "cross-env NODE_ENV=development ts-node-dev --inspect=9229 --nolazy --respawn ./src -r ts-node/register src/."
   },
