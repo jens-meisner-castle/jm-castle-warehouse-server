@@ -1,10 +1,14 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
+  getErrorCode,
   LoginResult,
+  TokenUndefinedErrorCode,
   UnknownErrorCode,
+  VerifyTokenResult,
 } from "jm-castle-warehouse-types";
 import { generateJWT } from "../../auth/GenerateToken.mjs";
+import { verifyToken } from "../../auth/VerifyToken.mjs";
 import { getStrictSingleQueryParametersSchema } from "../../json-schema/parameters.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { ApiService } from "../Types.mjs";
@@ -59,6 +63,53 @@ allServices.push({
         }
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
+
+allServices.push({
+  url: "/auth/token",
+  method: "GET",
+  neededRole: "none",
+  name: "Verify a token. Responds always with status 200. Also for invalid tokens.",
+  handler: [
+    async (req, res) => {
+      try {
+        const authHeader = req.headers["authorization"];
+        const token = authHeader && authHeader.split(" ")[1];
+        if (!token) {
+          return res.send({
+            error: "Authorization header is missing or invalid.",
+            errorCode: TokenUndefinedErrorCode,
+          });
+        }
+        try {
+          const { username, expiresAtDisplay, expiresAtMs, error, errorCode } =
+            await verifyToken(token);
+          if (error) {
+            return res.send({ error, errorCode });
+          }
+          const roles = getCurrentSystem().getUserRoles(username);
+          const apiResponse: ApiServiceResponse<VerifyTokenResult> = {
+            response: {
+              username,
+              expiresAtDisplay,
+              expiresAtMs,
+              roles: roles || [],
+            },
+          };
+          return res.send(apiResponse);
+        } catch (error) {
+          const { name } = error as Error;
+          const errorCode = getErrorCode(name);
+          return res.send({ errorCode, error: error.toString() });
+        }
+      } catch (error) {
+        return res.send({
+          errorCode: UnknownErrorCode,
+          error: error.toString(),
+        });
       }
     },
   ],

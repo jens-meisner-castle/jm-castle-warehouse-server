@@ -1,6 +1,6 @@
 {
   "name": "jm-castle-warehouse-server",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "main": "dist/index.mjs",
   "private": false,
@@ -46,7 +46,7 @@
     "@typescript-eslint/eslint-plugin": "^5.37.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.23.1",
-    "jm-castle-warehouse-types": "^0.7.6",
+    "jm-castle-warehouse-types": "^0.7.8",
     "nodemon": "^2.0.19",
     "prettier": "^2.7.1",
     "ts-node": "^10.9.1",

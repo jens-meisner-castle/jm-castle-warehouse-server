@@ -6,7 +6,13 @@ import {
 } from "jm-castle-warehouse-types";
 
 export type ExtendedParams = Record<string, any> & {
-  verifiedUser?: { user: string; roles: string[]; token: string };
+  verifiedUser?: {
+    username: string;
+    roles: string[];
+    token: string;
+    expiresAtMs: number;
+    expiresAtDisplay: string;
+  };
 };
 export type CastleRequestHandler = RequestHandler<
   ExtendedParams,
@@ -21,7 +27,7 @@ export interface ApiService {
   parameters?: QueryParametersSchema;
   method: "GET" | "POST";
   scope?: "public" | "private";
-  neededRole: UserRole | "none";
+  neededRole: UserRole | "none" | "any";
   name: string;
   handler: CastleRequestHandler[];
 }
