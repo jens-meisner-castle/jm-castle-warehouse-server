@@ -51,10 +51,15 @@ allServices.push({
                 originalFilename: string;
               } = Array.isArray(files.file) ? files.file[0] : files.file;
               const imageStore = getCurrentSystem().getImageStore();
-              const { width, height, size } = await imageStore.save(
-                file.path,
-                image_id
-              );
+              const {
+                width,
+                height,
+                size,
+                error: saveError,
+              } = await imageStore.save(file.path, image_id);
+              if (saveError) {
+                return handleError(res, UnknownErrorCode, saveError);
+              }
               const rowToInsert: Row_ImageContent = {
                 image_id,
                 image_extension,

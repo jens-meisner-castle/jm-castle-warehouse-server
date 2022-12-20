@@ -24,8 +24,7 @@ export class ImageFileStore {
   public save = async (
     sourcePath: string,
     imageId: string
-  ): Promise<ImageDimensions & { size: number }> => {
-    const sharpInstance = sharp(sourcePath);
+  ): Promise<ImageDimensions & { size: number; error?: string }> => {
     let shouldResize = true;
     try {
       const { width, height } = await this.dimensions(sourcePath);
@@ -36,15 +35,32 @@ export class ImageFileStore {
       console.error(
         `Catched error when determining dimensions of image: ${error}`
       );
+      return {
+        width: -1,
+        height: -1,
+        size: -1,
+        error: `Catched error when determining dimensions of image: ${error}`,
+      };
     }
-    shouldResize &&
-      sharpInstance.resize(this.maxWidth, this.maxHeight, { fit: "inside" });
-    // size (in bytes) of outputInfo is undefined
-    const destinationPath = this.path + imageId;
-    const outputInfo = await sharpInstance.toFile(destinationPath);
-    const { size } = fs.statSync(destinationPath);
-    const { width, height } = outputInfo;
-    return { width, height, size };
+    try {
+      const sharpInstance = sharp(sourcePath);
+      shouldResize &&
+        sharpInstance.resize(this.maxWidth, this.maxHeight, { fit: "inside" });
+      // size (in bytes) of outputInfo is undefined
+      const destinationPath = this.path + imageId;
+      const outputInfo = await sharpInstance.toFile(destinationPath);
+      const { size } = fs.statSync(destinationPath);
+      const { width, height } = outputInfo;
+      return { width, height, size };
+    } catch (error) {
+      console.error(`Catched error when when trying to save image: ${error}`);
+      return {
+        width: -1,
+        height: -1,
+        size: -1,
+        error: `Catched error when when trying to save image: ${error}`,
+      };
+    }
   };
 
   public dimensions = async (sourcePath: string): Promise<ImageDimensions> => {
