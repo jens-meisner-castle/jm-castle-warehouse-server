@@ -4,6 +4,7 @@ import express from "express";
 import createError from "http-errors";
 import { router as apiRouter } from "./routes/api.mjs";
 import { CastleWarehouse } from "./system/status/System.mjs";
+import fs from "fs";
 
 export const loggerMiddleware = (
   request: express.Request,
@@ -27,6 +28,7 @@ export const newExpressApp = (
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
   const clientPath = system.clientPath();
+  const indexHtml = fs.readFileSync(`${clientPath}/index.html`);
   app.use(express.static(clientPath));
   const imageStorePath = system.getImageStorePath();
   app.use(
@@ -38,8 +40,9 @@ export const newExpressApp = (
 
   app.use("/api", apiRouter);
 
-  app.get("*", (req, res, next) => {
-    res.render("index.html");
+  app.get("*", (req: express.Request, res, next) => {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(indexHtml);
   });
 
   // catch 404 and forward to error handler
@@ -48,8 +51,8 @@ export const newExpressApp = (
   });
 
   // error handler
-  app.use(function (err: any, req: any, res: any, next: any) {
-    console.log(req);
+  app.use(function (err: any, req: express.Request, res: any, next: any) {
+    console.log(req.url);
     // set locals, only providing error in development
     res.locals.message = err.message;
     res.locals.error = req.app.get("env") === "development" ? err : {};
