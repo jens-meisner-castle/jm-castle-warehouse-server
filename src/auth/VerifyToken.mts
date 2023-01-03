@@ -3,8 +3,9 @@ import {
   NameToCodeMap,
   TokenUndefinedErrorCode,
   UnknownErrorCode,
+  UserRole,
   VerifyTokenResult,
-} from "jm-castle-warehouse-types/build";
+} from "jm-castle-warehouse-types";
 import jwt from "jsonwebtoken";
 import { DateTime } from "luxon";
 import { CastleRequestHandler } from "../api/Types.mjs";
@@ -74,7 +75,7 @@ export const verifyRequest: CastleRequestHandler = async (req, res, next) => {
 };
 
 export const makeVerifyRole =
-  (role: string): CastleRequestHandler =>
+  (role: UserRole | "any"): CastleRequestHandler =>
   (req, res, next) => {
     const { roles } = req.params.verifiedUser || {};
     if (!roles || (role !== "any" && !roles.includes(role))) {

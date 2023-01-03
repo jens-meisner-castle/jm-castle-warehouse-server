@@ -125,3 +125,17 @@ export const select = async (
     return { error: error.toString() };
   }
 };
+
+export const all = async (
+  client: MariaDbClient
+): Promise<SelectResponse<Row>> => {
+  try {
+    const cmd = `SELECT * FROM ${table.id}`;
+    const queryResult = await client.getDatabasePool().query(cmd);
+    const rows: Row[] = [];
+    queryResult.forEach((r: Row) => rows.push(r));
+    return { result: { cmd, rows } };
+  } catch (error) {
+    return { error: error.toString() };
+  }
+};

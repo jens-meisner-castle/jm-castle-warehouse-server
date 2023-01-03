@@ -10,6 +10,7 @@ import {
   PersistenceSpec,
   SystemSpec,
   SystemStatus,
+  UserRole,
   UserRoles,
 } from "jm-castle-warehouse-types";
 import { DateTime } from "luxon";
@@ -85,7 +86,7 @@ export class CastleWarehouse {
   public authenticateUser = (
     username: string,
     password: string
-  ): undefined | false | { roles: string[] } => {
+  ): undefined | false | { roles: UserRole[] } => {
     const { user } = this.validConfig;
     const userSettings = user ? user[username] : undefined;
     if (!userSettings) {
@@ -98,7 +99,7 @@ export class CastleWarehouse {
     return { roles };
   };
 
-  public getUserRoles = (username: string): undefined | string[] => {
+  public getUserRoles = (username: string): undefined | UserRole[] => {
     const { user } = this.validConfig;
     const userSettings = user ? user[username] : undefined;
     if (!userSettings) {
@@ -109,6 +110,8 @@ export class CastleWarehouse {
   };
 
   public getImageStorePath = () => this.validConfig.imageStore.path;
+
+  public getTempFilePath = () => "c:/development/_temp";
 
   public getOwnApiUrl = () => {
     const { host, port } = this.validConfig.system;

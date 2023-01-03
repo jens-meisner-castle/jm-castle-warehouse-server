@@ -8,7 +8,7 @@ import {
 export type ExtendedParams = Record<string, any> & {
   verifiedUser?: {
     username: string;
-    roles: string[];
+    roles: UserRole[];
     token: string;
     expiresAtMs: number;
     expiresAtDisplay: string;

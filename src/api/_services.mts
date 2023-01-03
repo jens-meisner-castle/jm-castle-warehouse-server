@@ -6,6 +6,8 @@ import { services as articleServices } from "./article/_services.mjs";
 import { services as authServices } from "./auth/_services.mjs";
 import { services as emissionServices } from "./emission/_services.mjs";
 import { services as exampleServices } from "./example/_services.mjs";
+import { services as exportServices } from "./export/_services.mjs";
+import { services as importServices } from "./import/_services.mjs";
 import { services as imageContentServices } from "./imageContent/_services.mjs";
 import { services as imageReferenceServices } from "./imageReference/_services.mjs";
 import { services as receiptServices } from "./receipt/_services.mjs";
@@ -26,6 +28,8 @@ allServices.push(...exampleServices);
 allServices.push(...emissionServices);
 allServices.push(...imageReferenceServices);
 allServices.push(...imageContentServices);
+allServices.push(...exportServices);
+allServices.push(...importServices);
 allServices.push(...authServices);
 
 allServices.push({
