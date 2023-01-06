@@ -38,7 +38,7 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         if (section_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.tables.storeSection.insert({
+            const response = await persistence.api.insertStoreSection({
               ...storeSection,
               ...initialMasterdataFields(),
             });
@@ -91,7 +91,10 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         if (section_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.tables.storeSection.update({
+            const { result: selectResult } =
+              await persistence.tables.storeSection.selectByKey(section_id);
+            const { rows } = selectResult || {};
+            const response = await persistence.api.updateStoreSection({
               ...storeSection,
               ...without(
                 initialMasterdataFields(),

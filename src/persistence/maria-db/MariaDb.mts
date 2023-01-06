@@ -5,6 +5,7 @@ import {
   PersistentRow,
   Row_Article,
   Row_Emission,
+  Row_Hashtag,
   Row_ImageContent,
   Row_ImageReference,
   Row_Receipt,
@@ -20,6 +21,7 @@ import {
   all as allFromArticle,
   insert as insertArticle,
   select as selectFromArticle,
+  selectByKey as selectByKeyFromArticle,
   update as updateArticle,
 } from "./query/Article.mjs";
 import {
@@ -28,16 +30,26 @@ import {
   select as selectFromEmission,
 } from "./query/Emission.mjs";
 import {
+  all as allFromHashtag,
+  insert as insertHashtag,
+  select as selectFromHashtag,
+  selectByKey as selectByKeyFromHashtag,
+  update as updateHashtag,
+} from "./query/Hashtag.mjs";
+import {
   all as allFromImageContent,
   insert as insertImageContent,
   select as selectFromImageContent,
+  selectLikeImageId as selectFromImageContentLikeImageId,
   update as updateImageContent,
 } from "./query/ImageContent.mjs";
 import {
   all as allFromImageReference,
   insert as insertImageReference,
+  insertImageReferences,
   select as selectFromImageReference,
   update as updateImageReference,
+  updateImageReferences,
 } from "./query/ImageReference.mjs";
 import {
   Filter_At_FromTo_Seconds,
@@ -55,16 +67,19 @@ import {
   all as allFromStore,
   insert as insertStore,
   select as selectFromStore,
+  selectByKey as selectByKeyFromStore,
   update as updateStore,
 } from "./query/Store.mjs";
 import {
   all as allFromStoreSection,
   insert as insertStoreSection,
   select as selectFromStoreSection,
+  selectByKey as selectByKeyFromStoreSection,
   update as updateStoreSection,
 } from "./query/StoreSection.mjs";
 import { TableArticle } from "./tables/Article.mjs";
 import { TableEmission } from "./tables/Emission.mjs";
+import { TableHashtag } from "./tables/Hashtag.mjs";
 import { TableImageContent } from "./tables/ImageContent.mjs";
 import { TableImageReference } from "./tables/ImageReference.mjs";
 import { TableReceipt } from "./tables/Receipt.mjs";
@@ -80,6 +95,7 @@ export interface RunPartsResponse {
 export const AllTables = [
   TableImageReference,
   TableImageContent,
+  TableHashtag,
   TableStore,
   TableStoreSection,
   TableArticle,
@@ -152,6 +168,7 @@ export class MariaDbClient implements Persistence {
     { tables: DbExportData["tables"] } | { error: string; errorCode: ErrorCode }
   > => {
     try {
+      const hashtag = await this.exportSingleTableData(this.tables.hashtag);
       const article = await this.exportSingleTableData(this.tables.article);
       const store = await this.exportSingleTableData(this.tables.store);
       const storeSection = await this.exportSingleTableData(
@@ -166,6 +183,7 @@ export class MariaDbClient implements Persistence {
         this.tables.imageContent
       );
       const tables: DbExportData["tables"] = {
+        hashtag,
         article,
         store,
         storeSection,
@@ -182,12 +200,123 @@ export class MariaDbClient implements Persistence {
       };
     }
   };
+  public api = {
+    insertArticle: async (values: Row_Article & PersistentRow) => {
+      const { article_id, image_refs } = values;
+      const response = await this.tables.article.insert(values);
+      if (response.error) {
+        return response;
+      }
+      const reference = `article-${article_id}`;
+      await this.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
+      return response;
+    },
+    updateArticle: async (values: Row_Article & PersistentRow) => {
+      const { article_id, image_refs } = values;
+      const { result: selectResult } = await this.tables.article.selectByKey(
+        article_id
+      );
+      const { rows } = selectResult || {};
+      const previous = rows?.length ? rows[0] : undefined;
+      const response = await this.tables.article.update(values);
+      if (response.error) {
+        return response;
+      }
+      if (previous) {
+        const reference = `article-${article_id}`;
+        await this.tables.imageReference.updateImageReferences(
+          reference,
+          previous.image_refs,
+          image_refs
+        );
+      }
+      return response;
+    },
+    insertStore: async (values: Row_Store & PersistentRow) => {
+      const { store_id, image_refs } = values;
+      const response = await this.tables.store.insert(values);
+      if (response.error) {
+        return response;
+      }
+      const reference = `store-${store_id}`;
+      await this.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
+      return response;
+    },
+    updateStore: async (values: Row_Store & PersistentRow) => {
+      const { store_id, image_refs } = values;
+      const { result: selectResult } = await this.tables.store.selectByKey(
+        store_id
+      );
+      const { rows } = selectResult || {};
+      const previous = rows?.length ? rows[0] : undefined;
+      const response = await this.tables.store.update(values);
+      if (response.error) {
+        return response;
+      }
+      if (previous) {
+        const reference = `store-${store_id}`;
+        await this.tables.imageReference.updateImageReferences(
+          reference,
+          previous.image_refs,
+          image_refs
+        );
+      }
+      return response;
+    },
+    insertStoreSection: async (values: Row_StoreSection & PersistentRow) => {
+      const { section_id, image_refs } = values;
+      const response = await this.tables.storeSection.insert(values);
+      if (response.error) {
+        return response;
+      }
+      const reference = `storeSection-${section_id}`;
+      await this.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
+      return response;
+    },
+    updateStoreSection: async (values: Row_StoreSection & PersistentRow) => {
+      const { section_id, image_refs } = values;
+      const { result: selectResult } = await this.tables.store.selectByKey(
+        section_id
+      );
+      const { rows } = selectResult || {};
+      const previous = rows?.length ? rows[0] : undefined;
+      const response = await this.tables.storeSection.update(values);
+      if (response.error) {
+        return response;
+      }
+      if (previous) {
+        const reference = `storeSection-${section_id}`;
+        await this.tables.imageReference.updateImageReferences(
+          reference,
+          previous.image_refs,
+          image_refs
+        );
+      }
+      return response;
+    },
+  };
   public tables = {
     imageReference: {
       insert: (values: Row_ImageReference & PersistentRow) =>
         insertImageReference(values, this),
       update: (values: Row_ImageReference & PersistentRow) =>
         updateImageReference(values, this),
+      updateImageReferences: (
+        reference: string,
+        previous: string | null,
+        current: string | null
+      ) => updateImageReferences(reference, previous, current, this),
+      insertImageReferences: (reference: string, current: string | null) =>
+        insertImageReferences(reference, current, this),
       select: (filter: Filter_ImageId | Filter_Reference) =>
         selectFromImageReference(filter, this),
       all: () => allFromImageReference(this),
@@ -199,12 +328,15 @@ export class MariaDbClient implements Persistence {
         updateImageContent(values, this),
       select: (filter: Filter_ImageId | Filter_ImageExtension) =>
         selectFromImageContent(filter, this),
+      selectLikeImageId: (filter: Filter_ImageId) =>
+        selectFromImageContentLikeImageId(filter, this),
       all: () => allFromImageContent(this),
     },
     store: {
       insert: (values: Row_Store & PersistentRow) => insertStore(values, this),
       update: (values: Row_Store & PersistentRow) => updateStore(values, this),
       select: (filter: Filter_NameLike) => selectFromStore(filter, this),
+      selectByKey: (storeId: string) => selectByKeyFromStore(storeId, this),
       all: () => allFromStore(this),
     },
     storeSection: {
@@ -213,6 +345,8 @@ export class MariaDbClient implements Persistence {
       update: (values: Row_StoreSection & PersistentRow) =>
         updateStoreSection(values, this),
       select: (filter: Filter_NameLike) => selectFromStoreSection(filter, this),
+      selectByKey: (sectionId: string) =>
+        selectByKeyFromStoreSection(sectionId, this),
       all: () => allFromStoreSection(this),
     },
     article: {
@@ -221,7 +355,19 @@ export class MariaDbClient implements Persistence {
       update: (values: Row_Article & PersistentRow) =>
         updateArticle(values, this),
       select: (filter: Filter_NameLike) => selectFromArticle(filter, this),
+      selectByKey: (articleId: string) =>
+        selectByKeyFromArticle(articleId, this),
       all: () => allFromArticle(this),
+    },
+    hashtag: {
+      insert: (values: Row_Hashtag & PersistentRow) =>
+        insertHashtag(values, this),
+      update: (values: Row_Hashtag & PersistentRow) =>
+        updateHashtag(values, this),
+      select: (filter: Filter_NameLike) => selectFromHashtag(filter, this),
+      selectByKey: (articleId: string) =>
+        selectByKeyFromHashtag(articleId, this),
+      all: () => allFromHashtag(this),
     },
     receipt: {
       insert: (values: Row_Receipt & PersistentRow) =>

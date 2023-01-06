@@ -44,7 +44,11 @@ export const verifyToken = (token: string) => {
 
 export const verifyRequest: CastleRequestHandler = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  const token = Array.isArray(authHeader)
+    ? authHeader[0].split(" ")[1]
+    : typeof authHeader === "string"
+    ? authHeader.split(" ")[1]
+    : undefined;
   if (!token) {
     return handleError(
       res,

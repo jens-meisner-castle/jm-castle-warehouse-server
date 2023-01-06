@@ -48,13 +48,16 @@ export const createDataFromExample = async (
   const receiptRows: Row_Receipt[] = [];
   example.article.forEach((article) => {
     articleRows.push({ ...article, ...initialMasterdataFields() });
-    if (article.article_img_ref) {
-      const imageRefRow: Row_ImageReference = {
-        image_id: article.article_img_ref,
-        reference: "article",
-        ...initialMasterdataFields(),
-      };
-      imageRefRows.push(imageRefRow);
+    if (article.image_refs) {
+      const refs: string[] = JSON.parse(article.image_refs);
+      refs.forEach((ref) => {
+        const imageRefRow: Row_ImageReference = {
+          image_id: ref,
+          reference: "article-" + article.article_id,
+          ...initialMasterdataFields(),
+        };
+        imageRefRows.push(imageRefRow);
+      });
     }
   });
   for (let i = 0; i < example.image.length; i++) {
@@ -76,12 +79,34 @@ export const createDataFromExample = async (
       ...without({ ...store }, "storeSection"),
       ...initialMasterdataFields(),
     });
+    if (store.image_refs) {
+      const refs: string[] = JSON.parse(store.image_refs);
+      refs.forEach((ref) => {
+        const imageRefRow: Row_ImageReference = {
+          image_id: ref,
+          reference: "store-" + store.store_id,
+          ...initialMasterdataFields(),
+        };
+        imageRefRows.push(imageRefRow);
+      });
+    }
     store.storeSection.forEach((storeSection) => {
       storeSectionRows.push({
         ...without({ ...storeSection }, "articleStock"),
         store_id: store.store_id,
         ...initialMasterdataFields(),
       });
+      if (storeSection.image_refs) {
+        const refs: string[] = JSON.parse(storeSection.image_refs);
+        refs.forEach((ref) => {
+          const imageRefRow: Row_ImageReference = {
+            image_id: ref,
+            reference: "storeSection-" + storeSection.section_id,
+            ...initialMasterdataFields(),
+          };
+          imageRefRows.push(imageRefRow);
+        });
+      }
       storeSection.articleStock.forEach((articleStock) => {
         receiptRows.push({
           ...articleStock,
@@ -103,7 +128,7 @@ export const createDataFromExample = async (
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+              authorization: `Bearer ${token}`,
             },
             ca: certificate || undefined,
             rejectUnauthorized: !!certificate,
@@ -174,7 +199,7 @@ export const createDataFromExample = async (
               method: "POST",
               headers: {
                 ...formData.getHeaders(),
-                Authorization: `Bearer ${token}`,
+                authorization: `Bearer ${token}`,
               },
               ca: certificate || undefined,
               rejectUnauthorized: !!certificate,

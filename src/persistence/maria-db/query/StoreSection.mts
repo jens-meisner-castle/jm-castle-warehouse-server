@@ -3,6 +3,7 @@ import {
   PersistentRow,
   Row_StoreSection as Row,
   SelectResponse,
+  UpdateResponse,
 } from "jm-castle-warehouse-types";
 import { without } from "../../../utils/Basic.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
@@ -30,7 +31,7 @@ export const insert = async (
 export const update = async (
   values: Row & PersistentRow,
   client: MariaDbClient
-): Promise<InsertResponse<Row>> => {
+): Promise<UpdateResponse<Row>> => {
   try {
     const { section_id, dataset_version } = values;
     const valuesToUpdate = without({ ...values }, "section_id");

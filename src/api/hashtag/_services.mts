@@ -1,7 +1,7 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
-  Row_Article,
+  Row_Hashtag,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
 import {
@@ -21,25 +21,25 @@ import {
 const allServices: ApiService[] = [];
 
 allServices.push({
-  url: "/article/insert",
+  url: "/hashtag/insert",
   method: "POST",
   neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
-    "article_id",
-    "The id of the article to create.",
+    "tag_id",
+    "The id of the hashtag to create.",
     "string"
   ),
-  name: "Insert a new article.",
+  name: "Insert a new hashtag.",
   handler: [
     async (req, res) => {
       try {
-        const article: Row_Article = req.body;
-        const { article_id = undefined } =
+        const hashtag: Row_Hashtag = req.body;
+        const { tag_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        if (article_id) {
+        if (tag_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.api.insertArticle({
-              ...article,
+            const response = await persistence.tables.hashtag.insert({
+              ...hashtag,
               ...initialMasterdataFields(),
             });
             const { result, error, errorCode, errorDetails } = response || {};
@@ -63,7 +63,7 @@ allServices.push({
           return handleError(
             res,
             BadRequestMissingParameterCode,
-            "This url needs a query parameter: ...?article_id=<id of the article>"
+            "This url needs a query parameter: ...?tag_id=<id of the hashtag>"
           );
         }
       } catch (error) {
@@ -74,25 +74,25 @@ allServices.push({
 });
 
 allServices.push({
-  url: "/article/update",
+  url: "/hashtag/update",
   method: "POST",
   neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
-    "article_id",
-    "The id of the article to update.",
+    "tag_id",
+    "The id of the hashtag to update.",
     "string"
   ),
-  name: "Update an existing article.",
+  name: "Update an existing hashtag.",
   handler: [
     async (req, res) => {
       try {
-        const article: Row_Article = req.body;
-        const { article_id = undefined } =
+        const hashtag: Row_Hashtag = req.body;
+        const { tag_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        if (article_id) {
+        if (tag_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.api.updateArticle({
-              ...article,
+            const response = await persistence.tables.hashtag.update({
+              ...hashtag,
               ...without(
                 initialMasterdataFields(),
                 "created_at",
@@ -120,7 +120,7 @@ allServices.push({
           return handleError(
             res,
             BadRequestMissingParameterCode,
-            "This url needs a query parameter: ...?article_id=<id of the article>"
+            "This url needs a query parameter: ...?tag_id=<id of the hashtag>"
           );
         }
       } catch (error) {
@@ -131,7 +131,7 @@ allServices.push({
 });
 
 allServices.push({
-  url: "/article/select",
+  url: "/hashtag/select",
   method: "GET",
   neededRole: "external",
   parameters: getOptionalSingleQueryParametersSchema(
@@ -139,7 +139,7 @@ allServices.push({
     "A fragment of the name to search.",
     "string"
   ),
-  name: "Select articles by name.",
+  name: "Select hashtags by name.",
   handler: [
     async (req, res) => {
       try {
@@ -147,7 +147,7 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         const usedName = name ? addJokerToFilterValue(name) : "%";
         withDefaultPersistence(res, async (persistence) => {
-          const response = await persistence.tables.article.select({
+          const response = await persistence.tables.hashtag.select({
             name: usedName,
           });
           const { result, error, errorCode, errorDetails } = response || {};

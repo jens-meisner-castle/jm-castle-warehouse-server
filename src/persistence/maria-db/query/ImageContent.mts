@@ -3,6 +3,7 @@ import {
   PersistentRow,
   Row_ImageContent as Row,
   SelectResponse,
+  UpdateResponse,
 } from "jm-castle-warehouse-types";
 import { without } from "../../../utils/Basic.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
@@ -21,7 +22,7 @@ const table = TableImageContent;
 export const insert = async (
   values: Row & PersistentRow,
   client: MariaDbClient
-): Promise<InsertResponse<Row>> => {
+): Promise<UpdateResponse<Row>> => {
   try {
     const cmd = `INSERT INTO ${table.id} SET${valuesClause(values)}`;
     const response = await client.getDatabasePool().query(cmd);
@@ -82,6 +83,22 @@ export const selectByKey = async (
   try {
     const { image_id } = filter;
     const cmd = `SELECT * FROM ${table.id} WHERE image_id = '${image_id}'`;
+    const queryResult = await client.getDatabasePool().query(cmd);
+    const rows: Row[] = [];
+    queryResult.forEach((r: Row) => rows.push(r));
+    return { result: { cmd, rows } };
+  } catch (error) {
+    return { error: error.toString() };
+  }
+};
+
+export const selectLikeImageId = async (
+  filter: Filter_ImageId,
+  client: MariaDbClient
+): Promise<SelectResponse<Row>> => {
+  try {
+    const { image_id } = filter;
+    const cmd = `SELECT * FROM ${table.id} WHERE image_id LIKE '${image_id}'`;
     const queryResult = await client.getDatabasePool().query(cmd);
     const rows: Row[] = [];
     queryResult.forEach((r: Row) => rows.push(r));

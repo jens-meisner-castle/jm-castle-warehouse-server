@@ -82,7 +82,7 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         if (store_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.tables.store.insert({
+            const response = await persistence.api.insertStore({
               ...store,
               ...initialMasterdataFields(),
             });
@@ -135,7 +135,7 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         if (store_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.tables.store.update({
+            const response = await persistence.api.updateStore({
               ...store,
               ...without(
                 initialMasterdataFields(),

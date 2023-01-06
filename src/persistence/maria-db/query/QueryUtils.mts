@@ -14,6 +14,11 @@ export type Filter_Reference = {
   image_id?: never;
 };
 
+export type Filter_ImageReference = {
+  reference?: string;
+  image_id?: string;
+};
+
 export type Filter_ImageExtension = {
   image_extension: string;
   image_id?: never;

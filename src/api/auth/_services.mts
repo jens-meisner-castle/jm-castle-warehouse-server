@@ -77,7 +77,11 @@ allServices.push({
     async (req, res) => {
       try {
         const authHeader = req.headers["authorization"];
-        const token = authHeader && authHeader.split(" ")[1];
+        const token = Array.isArray(authHeader)
+          ? authHeader[0].split(" ")[1]
+          : typeof authHeader === "string"
+          ? authHeader.split(" ")[1]
+          : undefined;
         if (!token) {
           return res.send({
             error: "Authorization header is missing or invalid.",
