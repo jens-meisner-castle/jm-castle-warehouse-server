@@ -6,8 +6,8 @@ import {
   ApiServiceResponse,
   InsertResponse,
   Row_Article,
+  Row_Hashtag,
   Row_ImageContent,
-  Row_ImageReference,
   Row_Receipt,
   Row_Store,
   Row_StoreSection,
@@ -33,9 +33,9 @@ export const createDataFromExample = async (
   persistence: Persistence,
   token: string
 ): Promise<ExampleCreationResult> => {
-  const at_seconds = Math.ceil(Date.now() / 1000);
+  const receipt_at = Math.ceil(Date.now() / 1000);
+  const hashtagRows: Row_Hashtag[] = [];
   const articleRows: Row_Article[] = [];
-  const imageRefRows: Row_ImageReference[] = [];
   const imageSources: {
     image_id: string;
     blob: Blob;
@@ -48,17 +48,9 @@ export const createDataFromExample = async (
   const receiptRows: Row_Receipt[] = [];
   example.article.forEach((article) => {
     articleRows.push({ ...article, ...initialMasterdataFields() });
-    if (article.image_refs) {
-      const refs: string[] = JSON.parse(article.image_refs);
-      refs.forEach((ref) => {
-        const imageRefRow: Row_ImageReference = {
-          image_id: ref,
-          reference: "article-" + article.article_id,
-          ...initialMasterdataFields(),
-        };
-        imageRefRows.push(imageRefRow);
-      });
-    }
+  });
+  example.hashtag.forEach((hashtag) => {
+    hashtagRows.push({ ...hashtag, ...initialMasterdataFields() });
   });
   for (let i = 0; i < example.image.length; i++) {
     const imageSpec = example.image[i];
@@ -79,39 +71,17 @@ export const createDataFromExample = async (
       ...without({ ...store }, "storeSection"),
       ...initialMasterdataFields(),
     });
-    if (store.image_refs) {
-      const refs: string[] = JSON.parse(store.image_refs);
-      refs.forEach((ref) => {
-        const imageRefRow: Row_ImageReference = {
-          image_id: ref,
-          reference: "store-" + store.store_id,
-          ...initialMasterdataFields(),
-        };
-        imageRefRows.push(imageRefRow);
-      });
-    }
     store.storeSection.forEach((storeSection) => {
       storeSectionRows.push({
         ...without({ ...storeSection }, "articleStock"),
         store_id: store.store_id,
         ...initialMasterdataFields(),
       });
-      if (storeSection.image_refs) {
-        const refs: string[] = JSON.parse(storeSection.image_refs);
-        refs.forEach((ref) => {
-          const imageRefRow: Row_ImageReference = {
-            image_id: ref,
-            reference: "storeSection-" + storeSection.section_id,
-            ...initialMasterdataFields(),
-          };
-          imageRefRows.push(imageRefRow);
-        });
-      }
       storeSection.articleStock.forEach((articleStock) => {
         receiptRows.push({
           ...articleStock,
           section_id: storeSection.section_id,
-          at_seconds,
+          receipt_at,
           by_user: `example-${example.name}`,
           dataset_id: "new",
         });
@@ -119,6 +89,9 @@ export const createDataFromExample = async (
     });
   });
   try {
+    const hashtagResults = await Promise.all(
+      hashtagRows.map((row) => persistence.tables.hashtag.insert(row))
+    );
     const articleResults = await Promise.all(
       articleRows.map((row) => {
         return new Promise<InsertResponse<Row_Article>>((resolve, reject) => {
@@ -173,16 +146,13 @@ export const createDataFromExample = async (
       })
     );
     const storeResults = await Promise.all(
-      storeRows.map((row) => persistence.tables.store.insert(row))
+      storeRows.map((row) => persistence.api.insertStore(row))
     );
     const sectionResults = await Promise.all(
-      storeSectionRows.map((row) => persistence.tables.storeSection.insert(row))
+      storeSectionRows.map((row) => persistence.api.insertStoreSection(row))
     );
     const receiptResults = await Promise.all(
-      receiptRows.map((row) => persistence.tables.receipt.insert(row))
-    );
-    const imageRefResults = await Promise.all(
-      imageRefRows.map((row) => persistence.tables.imageReference.insert(row))
+      receiptRows.map((row) => persistence.api.insertReceipt(row))
     );
     const imageContentResults = await Promise.all(
       imageSources.map((source) => {
@@ -251,11 +221,11 @@ export const createDataFromExample = async (
       })
     );
     const allErrors: string[] = [];
+    hashtagResults.forEach((r) => r.error && allErrors.push(r.error));
     articleResults.forEach((r) => r.error && allErrors.push(r.error));
     storeResults.forEach((r) => r.error && allErrors.push(r.error));
     sectionResults.forEach((r) => r.error && allErrors.push(r.error));
     receiptResults.forEach((r) => r.error && allErrors.push(r.error));
-    imageRefResults.forEach((r) => r.error && allErrors.push(r.error));
     imageContentResults.forEach((r) => r.error && allErrors.push(r.error));
     if (allErrors.length) {
       return {
@@ -263,7 +233,13 @@ export const createDataFromExample = async (
       };
     }
     return {
-      result: { storeRows, storeSectionRows, articleRows, receiptRows },
+      result: {
+        storeRows,
+        storeSectionRows,
+        articleRows,
+        receiptRows,
+        hashtagRows,
+      },
     };
   } catch (error) {
     return {

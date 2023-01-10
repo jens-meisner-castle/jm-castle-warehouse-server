@@ -1,6 +1,7 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
+  Row_Emission,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
 import { getQueryParametersSchema } from "../../json-schema/parameters.mjs";
@@ -57,6 +58,43 @@ allServices.push({
             "This url needs query parameters: ...?at_from=<seconds of date>&at_to=<seconds of date>"
           );
         }
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
+
+allServices.push({
+  url: "/emission/insert",
+  method: "POST",
+  neededRole: "internal",
+  name: "Insert a new emission.",
+  handler: [
+    async (req, res) => {
+      try {
+        const emission: Row_Emission = req.body;
+        withDefaultPersistence(res, async (persistence) => {
+          const response = await persistence.tables.emission.insert({
+            ...emission,
+          });
+          const { result, error, errorCode, errorDetails } = response || {};
+          if (
+            handleErrorOrUndefinedResult(
+              res,
+              result,
+              errorCode || "-1",
+              error,
+              errorDetails
+            )
+          ) {
+            return;
+          }
+          const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+            response: { result },
+          };
+          return res.send(apiResponse);
+        });
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
       }

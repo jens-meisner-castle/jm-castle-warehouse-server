@@ -12,8 +12,6 @@ import { MariaDbClient } from "../MariaDb.mjs";
 import { TableHashtag } from "../tables/Hashtag.mjs";
 import { Filter_NameLike, valuesClause } from "./QueryUtils.mjs";
 
-export { Row };
-
 const table = TableHashtag;
 
 export const insert = async (

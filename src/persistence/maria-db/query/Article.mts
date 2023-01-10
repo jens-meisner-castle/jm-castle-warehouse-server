@@ -12,8 +12,6 @@ import { MariaDbClient } from "../MariaDb.mjs";
 import { TableArticle } from "../tables/Article.mjs";
 import { Filter_NameLike, valuesClause } from "./QueryUtils.mjs";
 
-export { Row };
-
 const table = TableArticle;
 
 export const insert = async (

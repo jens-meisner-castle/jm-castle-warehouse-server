@@ -45,6 +45,9 @@ export interface Persistence {
     updateStoreSection: (
       values: Row_StoreSection
     ) => Promise<UpdateResponse<Row_StoreSection>>;
+    insertReceipt: (
+      values: Row_Receipt
+    ) => Promise<InsertResponse<Row_Receipt>>;
   };
   tables: {
     imageReference: {

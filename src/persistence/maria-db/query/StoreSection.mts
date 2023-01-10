@@ -10,8 +10,6 @@ import { MariaDbClient } from "../MariaDb.mjs";
 import { TableStoreSection } from "../tables/StoreSection.mjs";
 import { Filter_NameLike, valuesClause } from "./QueryUtils.mjs";
 
-export { Row };
-
 const table = TableStoreSection;
 
 export const insert = async (

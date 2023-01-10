@@ -17,8 +17,6 @@ import {
   valuesClause,
 } from "./QueryUtils.mjs";
 
-export { Row };
-
 const table = TableImageReference;
 
 export const insert = async (

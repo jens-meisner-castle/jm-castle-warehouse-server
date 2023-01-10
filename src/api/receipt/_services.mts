@@ -1,6 +1,7 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
+  Row_Receipt,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types";
 import { getQueryParametersSchema } from "../../json-schema/parameters.mjs";
@@ -12,6 +13,43 @@ import {
 } from "../Utils.mjs";
 
 const allServices: ApiService[] = [];
+
+allServices.push({
+  url: "/receipt/insert",
+  method: "POST",
+  neededRole: "internal",
+  name: "Insert a new receipt.",
+  handler: [
+    async (req, res) => {
+      try {
+        const receipt: Row_Receipt = req.body;
+        withDefaultPersistence(res, async (persistence) => {
+          const response = await persistence.api.insertReceipt({
+            ...receipt,
+          });
+          const { result, error, errorCode, errorDetails } = response || {};
+          if (
+            handleErrorOrUndefinedResult(
+              res,
+              result,
+              errorCode || "-1",
+              error,
+              errorDetails
+            )
+          ) {
+            return;
+          }
+          const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+            response: { result },
+          };
+          return res.send(apiResponse);
+        });
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
 
 allServices.push({
   url: "/receipt/select",

@@ -303,6 +303,23 @@ export class MariaDbClient implements Persistence {
       }
       return response;
     },
+    insertReceipt: async (values: Row_Receipt & PersistentRow) => {
+      const { image_refs } = values;
+      // dataset_id ist erst nach dem einfügen bekannt (auto increment)
+      const response = await this.tables.receipt.insert(values);
+      if (response.error) {
+        return response;
+      }
+      const { result } = response;
+      const { data } = result;
+      const { dataset_id } = data;
+      const reference = `receipt-${dataset_id}`;
+      await this.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
+      return response;
+    },
   };
   public tables = {
     imageReference: {

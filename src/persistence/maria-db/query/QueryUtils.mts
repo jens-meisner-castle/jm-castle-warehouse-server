@@ -1,4 +1,15 @@
 import { PersistentRow } from "jm-castle-warehouse-types";
+import { PoolConnection } from "mariadb";
+
+export const selectLastInsertId = async (connection: PoolConnection) => {
+  const insertIdResponse: [{ "LAST_INSERT_ID()": unknown }] =
+    await connection.query("SELECT LAST_INSERT_ID()");
+  const lastInsertIdBigInt = insertIdResponse.length
+    ? insertIdResponse[0]["LAST_INSERT_ID()"]
+    : undefined;
+  const lastInsertId = Number.parseInt(lastInsertIdBigInt.toString());
+  return lastInsertId;
+};
 
 export interface Filter_NameLike {
   name: string;
