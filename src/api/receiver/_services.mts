@@ -1,14 +1,13 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
-  Row_Store,
+  Row_Receiver,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
 import {
   getOptionalSingleQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
 } from "../../json-schema/parameters.mjs";
-import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { addJokerToFilterValue } from "../../utils/Sql.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
@@ -22,69 +21,25 @@ import {
 const allServices: ApiService[] = [];
 
 allServices.push({
-  url: "/store/select",
-  method: "GET",
-  neededRole: "external",
-  parameters: getOptionalSingleQueryParametersSchema(
-    "name",
-    "A fragment of the name to search.",
-    "string"
-  ),
-  name: "Select stores by name.",
-  handler: [
-    async (req, res) => {
-      try {
-        const { name = undefined } =
-          typeof req.query === "object" ? req.query : {};
-        const usedName = name ? addJokerToFilterValue(name) : "%";
-        withDefaultPersistence(res, async (persistence) => {
-          const response = await persistence.tables.store.select({
-            name: usedName,
-          });
-          const { result, error, errorCode, errorDetails } = response || {};
-          if (
-            handleErrorOrUndefinedResult(
-              res,
-              result,
-              errorCode || "-1",
-              error,
-              errorDetails
-            )
-          ) {
-            return;
-          }
-          const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
-            response: { result },
-          };
-          return res.send(apiResponse);
-        });
-      } catch (error) {
-        return handleError(res, UnknownErrorCode, error.toString());
-      }
-    },
-  ],
-});
-
-allServices.push({
-  url: "/store/insert",
+  url: "/receiver/insert",
   method: "POST",
   neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
-    "store_id",
-    "The id of the store to create.",
+    "receiver_id",
+    "The id of the receiver to create.",
     "string"
   ),
-  name: "Insert a new store.",
+  name: "Insert a new receiver.",
   handler: [
     async (req, res) => {
       try {
-        const store: Row_Store = req.body;
-        const { store_id = undefined } =
+        const receiver: Row_Receiver = req.body;
+        const { receiver_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        if (store_id) {
+        if (receiver_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await getCurrentSystem().api.insertStore({
-              ...store,
+            const response = await persistence.tables.receiver.insert({
+              ...receiver,
               ...initialMasterdataFields(),
             });
             const { result, error, errorCode, errorDetails } = response || {};
@@ -108,7 +63,7 @@ allServices.push({
           return handleError(
             res,
             BadRequestMissingParameterCode,
-            "This url needs a query parameter: ...?store_id=<id of the store>"
+            "This url needs a query parameter: ...?receiver_id=<id of the receiver>"
           );
         }
       } catch (error) {
@@ -119,25 +74,25 @@ allServices.push({
 });
 
 allServices.push({
-  url: "/store/update",
+  url: "/receiver/update",
   method: "POST",
   neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
-    "store_id",
-    "The id of the store to update.",
+    "receiver_id",
+    "The id of the receiver to update.",
     "string"
   ),
-  name: "Update an existing store.",
+  name: "Update an existing receiver.",
   handler: [
     async (req, res) => {
       try {
-        const store: Row_Store = req.body;
-        const { store_id = undefined } =
+        const receiver: Row_Receiver = req.body;
+        const { receiver_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        if (store_id) {
+        if (receiver_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await getCurrentSystem().api.updateStore({
-              ...store,
+            const response = await persistence.tables.receiver.update({
+              ...receiver,
               ...without(
                 initialMasterdataFields(),
                 "created_at",
@@ -165,9 +120,53 @@ allServices.push({
           return handleError(
             res,
             BadRequestMissingParameterCode,
-            "This url needs a query parameter: ...?store_id=<id of the store>"
+            "This url needs a query parameter: ...?receiver_id=<id of the receiver>"
           );
         }
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
+
+allServices.push({
+  url: "/receiver/select",
+  method: "GET",
+  neededRole: "external",
+  parameters: getOptionalSingleQueryParametersSchema(
+    "name",
+    "A fragment of the name to search.",
+    "string"
+  ),
+  name: "Select receivers by name.",
+  handler: [
+    async (req, res) => {
+      try {
+        const { name = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        const usedName = name ? addJokerToFilterValue(name) : "%";
+        withDefaultPersistence(res, async (persistence) => {
+          const response = await persistence.tables.receiver.select({
+            name: usedName,
+          });
+          const { result, error, errorCode, errorDetails } = response || {};
+          if (
+            handleErrorOrUndefinedResult(
+              res,
+              result,
+              errorCode || "-1",
+              error,
+              errorDetails
+            )
+          ) {
+            return;
+          }
+          const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+            response: { result },
+          };
+          return res.send(apiResponse);
+        });
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
       }

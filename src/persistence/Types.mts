@@ -9,6 +9,7 @@ import {
   Row_ImageContent,
   Row_ImageReference,
   Row_Receipt,
+  Row_Receiver,
   Row_Store,
   Row_StoreSection,
   SelectResponse,
@@ -23,6 +24,13 @@ import {
   Filter_Reference,
 } from "./maria-db/query/QueryUtils.mjs";
 
+export const AggregationFunctions = {
+  min: { sql: "MIN" },
+  max: { sql: "MAX" },
+  sum: { sql: "SUM" },
+};
+
+export type AggreagtionFunction = keyof typeof AggregationFunctions;
 export interface Persistence {
   type: () => string;
   version: string;
@@ -30,25 +38,6 @@ export interface Persistence {
     | { tables: DbExportData["tables"]; error?: never; errorCode?: never }
     | { tables?: never; error: string; errorCode: ErrorCode }
   >;
-  api: {
-    insertArticle: (
-      values: Row_Article
-    ) => Promise<InsertResponse<Row_Article>>;
-    updateArticle: (
-      values: Row_Article
-    ) => Promise<UpdateResponse<Row_Article>>;
-    insertStore: (values: Row_Store) => Promise<InsertResponse<Row_Store>>;
-    updateStore: (values: Row_Store) => Promise<UpdateResponse<Row_Store>>;
-    insertStoreSection: (
-      values: Row_StoreSection
-    ) => Promise<InsertResponse<Row_StoreSection>>;
-    updateStoreSection: (
-      values: Row_StoreSection
-    ) => Promise<UpdateResponse<Row_StoreSection>>;
-    insertReceipt: (
-      values: Row_Receipt
-    ) => Promise<InsertResponse<Row_Receipt>>;
-  };
   tables: {
     imageReference: {
       insert: (
@@ -115,6 +104,17 @@ export interface Persistence {
       selectByKey: (tagId: string) => Promise<SelectResponse<Row_Hashtag>>;
       all: () => Promise<SelectResponse<Row_Hashtag>>;
     };
+    receiver: {
+      insert: (values: Row_Receiver) => Promise<InsertResponse<Row_Receiver>>;
+      update: (values: Row_Receiver) => Promise<UpdateResponse<Row_Receiver>>;
+      select: (
+        filter: Filter_NameLike
+      ) => Promise<SelectResponse<Row_Receiver>>;
+      selectByKey: (
+        receiverId: string
+      ) => Promise<SelectResponse<Row_Receiver>>;
+      all: () => Promise<SelectResponse<Row_Receiver>>;
+    };
     article: {
       insert: (values: Row_Article) => Promise<InsertResponse<Row_Article>>;
       update: (values: Row_Article) => Promise<UpdateResponse<Row_Article>>;
@@ -127,6 +127,11 @@ export interface Persistence {
       select: (
         filter: Filter_At_FromTo_Seconds
       ) => Promise<SelectResponse<Row_Receipt>>;
+      selectGroupBy: (
+        filter: Filter_At_FromTo_Seconds,
+        groupBy: Array<keyof Row_Receipt>,
+        aggregate: Array<{ col: keyof Row_Receipt; fn: AggreagtionFunction }>
+      ) => Promise<SelectResponse<Partial<Row_Receipt>>>;
       all: () => Promise<SelectResponse<Row_Receipt>>;
     };
     emission: {
@@ -134,6 +139,11 @@ export interface Persistence {
       select: (
         filter: Filter_At_FromTo_Seconds
       ) => Promise<SelectResponse<Row_Emission>>;
+      selectGroupBy: (
+        filter: Filter_At_FromTo_Seconds,
+        groupBy: Array<keyof Row_Emission>,
+        aggregate: Array<{ col: keyof Row_Emission; fn: AggreagtionFunction }>
+      ) => Promise<SelectResponse<Partial<Row_Emission>>>;
       all: () => Promise<SelectResponse<Row_Emission>>;
     };
   };

@@ -9,6 +9,7 @@ import {
   Row_ImageContent,
   Row_ImageReference,
   Row_Receipt,
+  Row_Receiver,
   Row_Store,
   Row_StoreSection,
   SelectResponse,
@@ -16,7 +17,7 @@ import {
 } from "jm-castle-warehouse-types";
 import { createPool, Pool } from "mariadb";
 import { ErrorWithCode } from "../../utils/Basic.mjs";
-import { Persistence } from "../Types.mjs";
+import { AggreagtionFunction, Persistence } from "../Types.mjs";
 import {
   all as allFromArticle,
   insert as insertArticle,
@@ -28,6 +29,7 @@ import {
   all as allFromEmission,
   insert as insertEmission,
   select as selectFromEmission,
+  selectGroupBy as selectGroupByFromEmission,
 } from "./query/Emission.mjs";
 import {
   all as allFromHashtag,
@@ -62,7 +64,15 @@ import {
   all as allFromReceipt,
   insert as insertReceipt,
   select as selectFromReceipt,
+  selectGroupBy as selectGroupByFromReceipt,
 } from "./query/Receipt.mjs";
+import {
+  all as allFromReceiver,
+  insert as insertReceiver,
+  select as selectFromReceiver,
+  selectByKey as selectByKeyFromReceiver,
+  update as updateReceiver,
+} from "./query/Receiver.mjs";
 import {
   all as allFromStore,
   insert as insertStore,
@@ -79,10 +89,13 @@ import {
 } from "./query/StoreSection.mjs";
 import { TableArticle } from "./tables/Article.mjs";
 import { TableEmission } from "./tables/Emission.mjs";
+import { TableEmissionRequest } from "./tables/EmissionRequest.mjs";
 import { TableHashtag } from "./tables/Hashtag.mjs";
 import { TableImageContent } from "./tables/ImageContent.mjs";
 import { TableImageReference } from "./tables/ImageReference.mjs";
 import { TableReceipt } from "./tables/Receipt.mjs";
+import { TableReceiptRequest } from "./tables/ReceiptRequest.mjs";
+import { TableReceiver } from "./tables/Receiver.mjs";
 import { TableStore } from "./tables/Store.mjs";
 import { TableStoreSection } from "./tables/StoreSection.mjs";
 
@@ -95,12 +108,15 @@ export interface RunPartsResponse {
 export const AllTables = [
   TableImageReference,
   TableImageContent,
+  TableReceiver,
   TableHashtag,
   TableStore,
   TableStoreSection,
   TableArticle,
   TableReceipt,
   TableEmission,
+  TableReceiptRequest,
+  TableEmissionRequest,
 ];
 
 export interface MariaDbClientProps {
@@ -200,127 +216,7 @@ export class MariaDbClient implements Persistence {
       };
     }
   };
-  public api = {
-    insertArticle: async (values: Row_Article & PersistentRow) => {
-      const { article_id, image_refs } = values;
-      const response = await this.tables.article.insert(values);
-      if (response.error) {
-        return response;
-      }
-      const reference = `article-${article_id}`;
-      await this.tables.imageReference.insertImageReferences(
-        reference,
-        image_refs
-      );
-      return response;
-    },
-    updateArticle: async (values: Row_Article & PersistentRow) => {
-      const { article_id, image_refs } = values;
-      const { result: selectResult } = await this.tables.article.selectByKey(
-        article_id
-      );
-      const { rows } = selectResult || {};
-      const previous = rows?.length ? rows[0] : undefined;
-      const response = await this.tables.article.update(values);
-      if (response.error) {
-        return response;
-      }
-      if (previous) {
-        const reference = `article-${article_id}`;
-        await this.tables.imageReference.updateImageReferences(
-          reference,
-          previous.image_refs,
-          image_refs
-        );
-      }
-      return response;
-    },
-    insertStore: async (values: Row_Store & PersistentRow) => {
-      const { store_id, image_refs } = values;
-      const response = await this.tables.store.insert(values);
-      if (response.error) {
-        return response;
-      }
-      const reference = `store-${store_id}`;
-      await this.tables.imageReference.insertImageReferences(
-        reference,
-        image_refs
-      );
-      return response;
-    },
-    updateStore: async (values: Row_Store & PersistentRow) => {
-      const { store_id, image_refs } = values;
-      const { result: selectResult } = await this.tables.store.selectByKey(
-        store_id
-      );
-      const { rows } = selectResult || {};
-      const previous = rows?.length ? rows[0] : undefined;
-      const response = await this.tables.store.update(values);
-      if (response.error) {
-        return response;
-      }
-      if (previous) {
-        const reference = `store-${store_id}`;
-        await this.tables.imageReference.updateImageReferences(
-          reference,
-          previous.image_refs,
-          image_refs
-        );
-      }
-      return response;
-    },
-    insertStoreSection: async (values: Row_StoreSection & PersistentRow) => {
-      const { section_id, image_refs } = values;
-      const response = await this.tables.storeSection.insert(values);
-      if (response.error) {
-        return response;
-      }
-      const reference = `storeSection-${section_id}`;
-      await this.tables.imageReference.insertImageReferences(
-        reference,
-        image_refs
-      );
-      return response;
-    },
-    updateStoreSection: async (values: Row_StoreSection & PersistentRow) => {
-      const { section_id, image_refs } = values;
-      const { result: selectResult } = await this.tables.store.selectByKey(
-        section_id
-      );
-      const { rows } = selectResult || {};
-      const previous = rows?.length ? rows[0] : undefined;
-      const response = await this.tables.storeSection.update(values);
-      if (response.error) {
-        return response;
-      }
-      if (previous) {
-        const reference = `storeSection-${section_id}`;
-        await this.tables.imageReference.updateImageReferences(
-          reference,
-          previous.image_refs,
-          image_refs
-        );
-      }
-      return response;
-    },
-    insertReceipt: async (values: Row_Receipt & PersistentRow) => {
-      const { image_refs } = values;
-      // dataset_id ist erst nach dem einfügen bekannt (auto increment)
-      const response = await this.tables.receipt.insert(values);
-      if (response.error) {
-        return response;
-      }
-      const { result } = response;
-      const { data } = result;
-      const { dataset_id } = data;
-      const reference = `receipt-${dataset_id}`;
-      await this.tables.imageReference.insertImageReferences(
-        reference,
-        image_refs
-      );
-      return response;
-    },
-  };
+
   public tables = {
     imageReference: {
       insert: (values: Row_ImageReference & PersistentRow) =>
@@ -386,11 +282,26 @@ export class MariaDbClient implements Persistence {
         selectByKeyFromHashtag(articleId, this),
       all: () => allFromHashtag(this),
     },
+    receiver: {
+      insert: (values: Row_Receiver & PersistentRow) =>
+        insertReceiver(values, this),
+      update: (values: Row_Receiver & PersistentRow) =>
+        updateReceiver(values, this),
+      select: (filter: Filter_NameLike) => selectFromReceiver(filter, this),
+      selectByKey: (articleId: string) =>
+        selectByKeyFromReceiver(articleId, this),
+      all: () => allFromReceiver(this),
+    },
     receipt: {
       insert: (values: Row_Receipt & PersistentRow) =>
         insertReceipt(values, this),
       select: (filter: Filter_At_FromTo_Seconds) =>
         selectFromReceipt(filter, this),
+      selectGroupBy: (
+        filter: Filter_At_FromTo_Seconds,
+        groupBy: Array<keyof Row_Receipt>,
+        aggregate: Array<{ col: keyof Row_Receipt; fn: AggreagtionFunction }>
+      ) => selectGroupByFromReceipt(filter, groupBy, aggregate, this),
       all: () => allFromReceipt(this),
     },
     emission: {
@@ -398,6 +309,11 @@ export class MariaDbClient implements Persistence {
         insertEmission(values, this),
       select: (filter: Filter_At_FromTo_Seconds) =>
         selectFromEmission(filter, this),
+      selectGroupBy: (
+        filter: Filter_At_FromTo_Seconds,
+        groupBy: Array<keyof Row_Emission>,
+        aggregate: Array<{ col: keyof Row_Emission; fn: AggreagtionFunction }>
+      ) => selectGroupByFromEmission(filter, groupBy, aggregate, this),
       all: () => allFromEmission(this),
     },
   };

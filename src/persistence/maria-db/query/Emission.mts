@@ -5,10 +5,14 @@ import {
   SelectResponse,
 } from "jm-castle-warehouse-types";
 import { without } from "../../../utils/Basic.mjs";
+import { AggreagtionFunction, AggregationFunctions } from "../../Types.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
 import { TableEmission } from "../tables/Emission.mjs";
-import { Filter_At_FromTo_Seconds, valuesClause } from "./QueryUtils.mjs";
-import { selectLastInsertId } from "./QueryUtils.mjs";
+import {
+  Filter_At_FromTo_Seconds,
+  selectLastInsertId,
+  valuesClause,
+} from "./QueryUtils.mjs";
 
 const table = TableEmission;
 
@@ -38,6 +42,30 @@ export const select = async (
   try {
     const { at_from, at_to } = filter;
     const cmd = `SELECT * FROM ${table.id} WHERE emitted_at BETWEEN ${at_from} AND ${at_to}`;
+    const queryResult = await client.getDatabasePool().query(cmd);
+    const rows: Row[] = [];
+    queryResult.forEach((r: Row) => rows.push(r));
+    return { result: { cmd, rows } };
+  } catch (error) {
+    return { error: error.toString() };
+  }
+};
+
+export const selectGroupBy = async (
+  filter: Filter_At_FromTo_Seconds,
+  groupBy: Array<keyof Row>,
+  aggregate: Array<{ col: keyof Row; fn: AggreagtionFunction }>,
+  client: MariaDbClient
+): Promise<SelectResponse<Partial<Row>>> => {
+  try {
+    const { at_from, at_to } = filter;
+    const cmd = `SELECT ${aggregate
+      .map((e) => `${AggregationFunctions[e.fn].sql}(${e.col}) AS ${e.col}`)
+      .join(", ")}, ${groupBy.join(", ")} FROM ${
+      table.id
+    } WHERE receipt_at BETWEEN ${at_from} AND ${at_to} GROUP BY ${groupBy.join(
+      ", "
+    )}`;
     const queryResult = await client.getDatabasePool().query(cmd);
     const rows: Row[] = [];
     queryResult.forEach((r: Row) => rows.push(r));

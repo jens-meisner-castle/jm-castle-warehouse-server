@@ -8,6 +8,7 @@ import {
   getOptionalSingleQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
 } from "../../json-schema/parameters.mjs";
+import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { addJokerToFilterValue } from "../../utils/Sql.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
@@ -38,7 +39,7 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         if (article_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.api.insertArticle({
+            const response = await getCurrentSystem().api.insertArticle({
               ...article,
               ...initialMasterdataFields(),
             });
@@ -91,7 +92,7 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         if (article_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.api.updateArticle({
+            const response = await getCurrentSystem().api.updateArticle({
               ...article,
               ...without(
                 initialMasterdataFields(),

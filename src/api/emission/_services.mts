@@ -5,6 +5,7 @@ import {
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
 import { getQueryParametersSchema } from "../../json-schema/parameters.mjs";
+import { getCurrentSystem } from "../../system/status/System.mjs";
 import { ApiService } from "../Types.mjs";
 import {
   handleError,
@@ -75,7 +76,7 @@ allServices.push({
       try {
         const emission: Row_Emission = req.body;
         withDefaultPersistence(res, async (persistence) => {
-          const response = await persistence.tables.emission.insert({
+          const response = await getCurrentSystem().api.insertEmission({
             ...emission,
           });
           const { result, error, errorCode, errorDetails } = response || {};

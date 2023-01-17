@@ -8,6 +8,11 @@ import {
   isUserRole,
   MailingSpec,
   PersistenceSpec,
+  Row_Article,
+  Row_Emission,
+  Row_Receipt,
+  Row_Store,
+  Row_StoreSection,
   SystemSpec,
   SystemStatus,
   UserRole,
@@ -24,6 +29,7 @@ import { getMailSender } from "../../mail/Mail.mjs";
 import { MailSender } from "../../mail/Types.mjs";
 import { getPersistence } from "../../persistence/Persistence.mjs";
 import { Persistence } from "../../persistence/Types.mjs";
+import { ArticleStock } from "../../stock/ArticleStock.mjs";
 import { getDateFormat } from "../../utils/Format.mjs";
 
 let CurrentSystem: CastleWarehouse | undefined = undefined;
@@ -53,6 +59,7 @@ export class CastleWarehouse {
   private validConfig: CheckedConfiguration;
 
   private imageStore: ImageFileStore;
+  private articleStock: ArticleStock;
   private persistence: Record<string, Persistence> = {};
   private defaultPersistence: Persistence | undefined = undefined;
   private mailSenders: Record<string, MailSender> = {};
@@ -61,6 +68,144 @@ export class CastleWarehouse {
   private caCert: Buffer | null | undefined = undefined;
   private serverCert: Buffer;
   private serverKey: Buffer;
+
+  public api = {
+    insertArticle: async (row: Row_Article) => {
+      const { article_id, image_refs } = row;
+      const response = await this.defaultPersistence.tables.article.insert(row);
+      if (response.error) {
+        return response;
+      }
+      const reference = `article-${article_id}`;
+      await this.defaultPersistence.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
+      return response;
+    },
+    updateArticle: async (row: Row_Article) => {
+      const { article_id, image_refs } = row;
+      const { result: selectResult } =
+        await this.defaultPersistence.tables.article.selectByKey(article_id);
+      const { rows } = selectResult || {};
+      const previous = rows?.length ? rows[0] : undefined;
+      const response = await this.defaultPersistence.tables.article.update(row);
+      if (response.error) {
+        return response;
+      }
+      this.articleStock.updateChangedArticle(row);
+      if (previous) {
+        const reference = `article-${article_id}`;
+        await this.defaultPersistence.tables.imageReference.updateImageReferences(
+          reference,
+          previous.image_refs,
+          image_refs
+        );
+      }
+      return response;
+    },
+    insertStore: async (row: Row_Store) => {
+      const { store_id, image_refs } = row;
+      const response = await this.defaultPersistence.tables.store.insert(row);
+      if (response.error) {
+        return response;
+      }
+      const reference = `store-${store_id}`;
+      await this.defaultPersistence.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
+      return response;
+    },
+    updateStore: async (row: Row_Store) => {
+      const { store_id, image_refs } = row;
+      const { result: selectResult } =
+        await this.defaultPersistence.tables.store.selectByKey(store_id);
+      const { rows } = selectResult || {};
+      const previous = rows?.length ? rows[0] : undefined;
+      const response = await this.defaultPersistence.tables.store.update(row);
+      if (response.error) {
+        return response;
+      }
+      if (previous) {
+        const reference = `store-${store_id}`;
+        await this.defaultPersistence.tables.imageReference.updateImageReferences(
+          reference,
+          previous.image_refs,
+          image_refs
+        );
+      }
+      return response;
+    },
+    insertStoreSection: async (row: Row_StoreSection) => {
+      const { section_id, image_refs } = row;
+      const response = await this.defaultPersistence.tables.storeSection.insert(
+        row
+      );
+      if (response.error) {
+        return response;
+      }
+      const reference = `storeSection-${section_id}`;
+      this.articleStock.updateNewStoreSection(row);
+      await this.defaultPersistence.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
+      return response;
+    },
+    updateStoreSection: async (row: Row_StoreSection) => {
+      const { section_id, image_refs } = row;
+      const { result: selectResult } =
+        await this.defaultPersistence.tables.store.selectByKey(section_id);
+      const { rows } = selectResult || {};
+      const previous = rows?.length ? rows[0] : undefined;
+      const response = await this.defaultPersistence.tables.storeSection.update(
+        row
+      );
+      if (response.error) {
+        return response;
+      }
+      if (previous) {
+        const reference = `storeSection-${section_id}`;
+        await this.defaultPersistence.tables.imageReference.updateImageReferences(
+          reference,
+          previous.image_refs,
+          image_refs
+        );
+      }
+      return response;
+    },
+    insertReceipt: async (row: Row_Receipt) => {
+      const { image_refs } = row;
+      // dataset_id ist erst nach dem einfügen bekannt (auto increment)
+      const response = await this.defaultPersistence.tables.receipt.insert(row);
+      if (response.error) {
+        return response;
+      }
+      const { result } = response;
+      const { data } = result || {};
+      data && (await this.articleStock.updateNewReceipt(row));
+      const { dataset_id } = data || {};
+      const reference = `receipt-${dataset_id}`;
+      await this.defaultPersistence.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
+      return response;
+    },
+    insertEmission: async (row: Row_Emission) => {
+      const response = await this.defaultPersistence.tables.emission.insert(
+        row
+      );
+      if (response.error) {
+        return response;
+      }
+      const { result } = response;
+      const { data } = result || {};
+      data && (await this.articleStock.updateNewEmission(data));
+      return response;
+    },
+  };
 
   public clientPath = () => this.validConfig.system.client?.path || "./client";
 
@@ -81,6 +226,7 @@ export class CastleWarehouse {
     }
     await this.setupPersistence();
     await this.setupImageStore();
+    await this.setupArticleStock();
   };
 
   public authenticateUser = (
@@ -521,6 +667,19 @@ export class CastleWarehouse {
     return;
   };
 
+  private setupArticleStock = async () => {
+    if (!this.defaultPersistence) {
+      console.error(
+        "Unable to create article stock without default persistence."
+      );
+      this.articleStock = new ArticleStock(this);
+      return;
+    }
+    this.articleStock = new ArticleStock(this);
+    await this.articleStock.initFromSystem();
+    return;
+  };
+
   private setupMailSenders = async () => {
     Object.keys(this.validConfig.mail).forEach((k) => {
       const mailingSpec = this.validConfig.mail[k];
@@ -534,6 +693,8 @@ export class CastleWarehouse {
   };
 
   public getImageStore = () => this.imageStore;
+
+  public getArticleStock = () => this.articleStock;
 
   public getStatus = async (): Promise<SystemStatus> => {
     const cleanConfig = JSON.parse(JSON.stringify(this.configuration));

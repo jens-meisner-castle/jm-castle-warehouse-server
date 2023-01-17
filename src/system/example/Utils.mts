@@ -17,7 +17,7 @@ import { Persistence } from "../../persistence/Types.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { getExtension, getFilename } from "../../utils/File.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
-import { CastleWarehouse } from "../status/System.mjs";
+import { CastleWarehouse, getCurrentSystem } from "../status/System.mjs";
 import { Example } from "./Types.mjs";
 
 export type ExampleCreationResult =
@@ -146,13 +146,15 @@ export const createDataFromExample = async (
       })
     );
     const storeResults = await Promise.all(
-      storeRows.map((row) => persistence.api.insertStore(row))
+      storeRows.map((row) => getCurrentSystem().api.insertStore(row))
     );
     const sectionResults = await Promise.all(
-      storeSectionRows.map((row) => persistence.api.insertStoreSection(row))
+      storeSectionRows.map((row) =>
+        getCurrentSystem().api.insertStoreSection(row)
+      )
     );
     const receiptResults = await Promise.all(
-      receiptRows.map((row) => persistence.api.insertReceipt(row))
+      receiptRows.map((row) => getCurrentSystem().api.insertReceipt(row))
     );
     const imageContentResults = await Promise.all(
       imageSources.map((source) => {

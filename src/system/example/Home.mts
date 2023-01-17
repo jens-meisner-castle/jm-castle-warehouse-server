@@ -25,6 +25,7 @@ export const home: Example = {
                 ).toMillis() / 1000
               ),
               www_link: null,
+              reason: "buy",
             },
           ],
         },

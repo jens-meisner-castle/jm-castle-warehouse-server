@@ -5,6 +5,7 @@ import {
   UnknownErrorCode,
 } from "jm-castle-warehouse-types";
 import { getQueryParametersSchema } from "../../json-schema/parameters.mjs";
+import { getCurrentSystem } from "../../system/status/System.mjs";
 import { ApiService } from "../Types.mjs";
 import {
   handleError,
@@ -24,7 +25,7 @@ allServices.push({
       try {
         const receipt: Row_Receipt = req.body;
         withDefaultPersistence(res, async (persistence) => {
-          const response = await persistence.api.insertReceipt({
+          const response = await getCurrentSystem().api.insertReceipt({
             ...receipt,
           });
           const { result, error, errorCode, errorDetails } = response || {};

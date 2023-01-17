@@ -8,6 +8,7 @@ import {
   getOptionalSingleQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
 } from "../../json-schema/parameters.mjs";
+import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { addJokerToFilterValue } from "../../utils/Sql.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
@@ -38,7 +39,7 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         if (section_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.api.insertStoreSection({
+            const response = await getCurrentSystem().api.insertStoreSection({
               ...storeSection,
               ...initialMasterdataFields(),
             });
@@ -94,7 +95,7 @@ allServices.push({
             const { result: selectResult } =
               await persistence.tables.storeSection.selectByKey(section_id);
             const { rows } = selectResult || {};
-            const response = await persistence.api.updateStoreSection({
+            const response = await getCurrentSystem().api.updateStoreSection({
               ...storeSection,
               ...without(
                 initialMasterdataFields(),
