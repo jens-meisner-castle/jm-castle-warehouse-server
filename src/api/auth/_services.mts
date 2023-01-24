@@ -4,6 +4,7 @@ import {
   getErrorCode,
   LoginResult,
   TokenUndefinedErrorCode,
+  UnknownClientOrBadIpCode,
   UnknownErrorCode,
   VerifyTokenResult,
 } from "jm-castle-warehouse-types";
@@ -114,6 +115,66 @@ allServices.push({
           errorCode: UnknownErrorCode,
           error: error.toString(),
         });
+      }
+    },
+  ],
+});
+
+allServices.push({
+  url: "/auth/client",
+  method: "GET",
+  neededRole: "none",
+  name: "Login with just a client_id.",
+  handler: [
+    async (req, res) => {
+      try {
+        const { client_id = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        if (client_id) {
+          const clientIp = req.socket.remoteAddress;
+          const authResponse = getCurrentSystem().authenticateClient(
+            client_id,
+            clientIp
+          );
+          if (authResponse === undefined || authResponse === false) {
+            return handleError(
+              res,
+              UnknownClientOrBadIpCode,
+              authResponse === false
+                ? "This client is authorized for a different ip."
+                : "This client is unknown."
+            );
+          }
+          const { user: username } = authResponse;
+          try {
+            const { token, expiresAtMs, expiresAtDisplay } =
+              generateJWT(username);
+            const roles = getCurrentSystem().getUserRoles(username);
+            const result: LoginResult = {
+              token,
+              expiresAtMs,
+              expiresAtDisplay,
+              username,
+              roles,
+            };
+            const apiResponse: ApiServiceResponse<LoginResult> = {
+              response: result,
+            };
+            return res.send(apiResponse);
+          } catch (error) {
+            const { name } = error as Error;
+            const errorCode = getErrorCode(name);
+            return res.send({ errorCode, error: error.toString() });
+          }
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?client_id=<id of the client>"
+          );
+        }
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
       }
     },
   ],

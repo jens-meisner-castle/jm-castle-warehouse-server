@@ -2,6 +2,7 @@ import fs from "fs";
 import {
   CheckedConfiguration,
   Configuration,
+  DefaultClientSpec,
   DefaultUserSpec,
   FilesystemStoreSpec,
   ImageStoreSpec,
@@ -229,6 +230,22 @@ export class CastleWarehouse {
     await this.setupArticleStock();
   };
 
+  public authenticateClient = (
+    clientId: string,
+    clientIp: string
+  ): { user: string } | false | undefined => {
+    const { client } = this.validConfig;
+    const clientSettings = client ? client[clientId] : undefined;
+    if (!clientSettings) {
+      return undefined;
+    }
+    const { ip, id, user } = clientSettings;
+    if (ip !== clientIp || clientId !== id) {
+      return false;
+    }
+    return { user };
+  };
+
   public authenticateUser = (
     username: string,
     password: string
@@ -392,6 +409,51 @@ export class CastleWarehouse {
     }
     validConfig.system = spec;
     return true;
+  };
+
+  private checkClientSpec = (
+    spec: DefaultClientSpec,
+    validConfig: Configuration,
+    errors: string[]
+  ): boolean => {
+    if (typeof spec !== "object") {
+      errors.push(
+        `Bad client spec: If used the value must be an object. Found type "${typeof spec}".`
+      );
+      return false;
+    }
+    const localErrors: string[] = [];
+    const clientIds = Object.keys(spec);
+    clientIds.find((clientId) => {
+      const settings = spec[clientId];
+      if (typeof settings !== "object") {
+        localErrors.push(
+          `Bad client spec: The value of each key within the client spec must be an object. For client id <${clientId}> found type "${typeof settings}".`
+        );
+        return true;
+      }
+      const { ip, user } = settings;
+      if (typeof ip !== "string") {
+        localErrors.push(
+          `Bad client spec: The property "ip" must have a string as value. For client id <${clientId}> found type "${typeof ip}".`
+        );
+        return true;
+      }
+      if (typeof user !== "string") {
+        localErrors.push(
+          `Bad client spec: The property "user" must have a string as value. For client id <${clientId}> found type "${typeof ip}".`
+        );
+        return true;
+      }
+      return false;
+    });
+    if (localErrors.length) {
+      errors.push(...localErrors);
+      return false;
+    } else {
+      validConfig.client = spec;
+      return true;
+    }
   };
 
   private checkUserSpec = (
@@ -576,7 +638,8 @@ export class CastleWarehouse {
     configuration: Configuration
   ): { validConfig: CheckedConfiguration; errors: string[] | undefined } => {
     try {
-      const { persistence, mail, system, imageStore, user } = configuration;
+      const { persistence, mail, system, imageStore, user, client } =
+        configuration;
       const validConfig: CheckedConfiguration = {
         isValid: true,
         system: {
@@ -600,6 +663,7 @@ export class CastleWarehouse {
       const errors: string[] = [];
       system && this.checkSystemSpec(system, validConfig, errors);
       user && this.checkUserSpec(user, validConfig, errors);
+      client && this.checkClientSpec(client, validConfig, errors);
       imageStore && this.checkImageStoreSpec(imageStore, validConfig, errors);
       persistence &&
         Object.keys(persistence).forEach((k) => {

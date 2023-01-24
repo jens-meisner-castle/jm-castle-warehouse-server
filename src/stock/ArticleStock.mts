@@ -100,7 +100,6 @@ export class ArticleStock {
     const { rows: emissionRows } = emissionResult;
     // Bestand: stock state + neuer Eingang - neuer Ausgang
     receiptRows.forEach((receipt) => {
-      console.log(receipt);
       const article = articleHash[receipt.article_id];
       const perArticle =
         article &&

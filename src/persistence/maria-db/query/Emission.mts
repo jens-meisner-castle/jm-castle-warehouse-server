@@ -63,7 +63,7 @@ export const selectGroupBy = async (
       .map((e) => `${AggregationFunctions[e.fn].sql}(${e.col}) AS ${e.col}`)
       .join(", ")}, ${groupBy.join(", ")} FROM ${
       table.id
-    } WHERE receipt_at BETWEEN ${at_from} AND ${at_to} GROUP BY ${groupBy.join(
+    } WHERE emitted_at BETWEEN ${at_from} AND ${at_to} GROUP BY ${groupBy.join(
       ", "
     )}`;
     const queryResult = await client.getDatabasePool().query(cmd);

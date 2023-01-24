@@ -1,5 +1,14 @@
 import { Table } from "jm-castle-warehouse-types";
 
+/**
+ * Kostenstelle: zusätzliche Stammdaten
+ */
+
+export const TODO = {
+  cost_unit: "???",
+  image_refs: "vergleiche receipt",
+};
+
 export const TableEmission: Table = {
   id: "emission",
   columnsFragment: [
