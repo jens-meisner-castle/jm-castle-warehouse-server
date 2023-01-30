@@ -1,10 +1,15 @@
 import { Table } from "jm-castle-warehouse-types";
-import { masterdataTableColumnsFragment } from "./Masterdata.mjs";
+import { masterdataTableColumns } from "./Masterdata.mjs";
 
 export const TableStoreSection: Table = {
   id: "store_section",
-  columnsFragment:
-    "section_id VARCHAR(100) PRIMARY KEY, store_id VARCHAR(100), name VARCHAR(100), image_refs VARCHAR(500)" +
-    ", " +
-    masterdataTableColumnsFragment(),
+  columns: [
+    { name: "section_id", type: "varchar(100)" },
+    { name: "store_id", type: "varchar(100)" },
+    { name: "name", type: "varchar(100)" },
+    { name: "short_id", type: "varchar(3)" },
+    { name: "image_refs", type: "varchar(500)" },
+    ...masterdataTableColumns(),
+  ],
+  primaryKey: "PRIMARY KEY(section_id)",
 };

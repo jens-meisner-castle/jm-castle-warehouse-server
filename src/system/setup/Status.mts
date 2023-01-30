@@ -15,7 +15,7 @@ export const getSystemSetupStatus = async (
 ): Promise<SystemSetupStatus> => {
   if (persistence.type() !== "maria-db") {
     throw new Error(
-      "Currently is a a setup for a MariaDB only. The default persistence is different."
+      "Currently is a setup for a MariaDB only. The default persistence is different."
     );
   }
   const mariaClient = persistence as unknown as MariaDbClient;
@@ -24,13 +24,23 @@ export const getSystemSetupStatus = async (
     allTables.map((table) => columns(table, mariaClient))
   );
   const tables: Record<string, TableStatus> = {};
+  const targetTables: Record<string, TableStatus> = {};
+
   allTables.forEach((table, i) => {
-    tables[table.id] = {
+    (targetTables[table.id] = {
       name: table.id,
       table: table,
-      isCreated: !!allColumns[i]?.result.length,
-    };
+      isCreated: true,
+      columns: table.columns,
+    }),
+      (tables[table.id] = {
+        name: table.id,
+        table: table,
+        isCreated: !!allColumns[i]?.result?.length,
+        columns: allColumns[i]?.result || [],
+      });
   });
   const database = { name: mariaClient.getDatabaseName(), tables };
-  return { database };
+  const software = { name: "castle-warehouse", tables: targetTables };
+  return { database, software };
 };

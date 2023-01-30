@@ -147,7 +147,7 @@ export class CastleWarehouse {
         return response;
       }
       const reference = `storeSection-${section_id}`;
-      this.articleStock.updateNewStoreSection(row);
+      await this.articleStock.updateNewStoreSection(row);
       await this.defaultPersistence.tables.imageReference.insertImageReferences(
         reference,
         image_refs
@@ -166,6 +166,7 @@ export class CastleWarehouse {
       if (response.error) {
         return response;
       }
+      await this.articleStock.updateChangedStoreSection(row);
       if (previous) {
         const reference = `storeSection-${section_id}`;
         await this.defaultPersistence.tables.imageReference.updateImageReferences(
@@ -195,6 +196,8 @@ export class CastleWarehouse {
       return response;
     },
     insertEmission: async (row: Row_Emission) => {
+      const { image_refs } = row;
+      // dataset_id ist erst nach dem einfügen bekannt (auto increment)
       const response = await this.defaultPersistence.tables.emission.insert(
         row
       );
@@ -204,6 +207,12 @@ export class CastleWarehouse {
       const { result } = response;
       const { data } = result || {};
       data && (await this.articleStock.updateNewEmission(data));
+      const { dataset_id } = data || {};
+      const reference = `emission-${dataset_id}`;
+      await this.defaultPersistence.tables.imageReference.insertImageReferences(
+        reference,
+        image_refs
+      );
       return response;
     },
   };
@@ -240,7 +249,7 @@ export class CastleWarehouse {
       return undefined;
     }
     const { ip, id, user } = clientSettings;
-    if (ip !== clientIp || clientId !== id) {
+    if (!ip.includes(clientIp) || clientId !== id) {
       return false;
     }
     return { user };
@@ -433,9 +442,9 @@ export class CastleWarehouse {
         return true;
       }
       const { ip, user } = settings;
-      if (typeof ip !== "string") {
+      if (!Array.isArray(ip)) {
         localErrors.push(
-          `Bad client spec: The property "ip" must have a string as value. For client id <${clientId}> found type "${typeof ip}".`
+          `Bad client spec: The property "ip" must have an array of strings as value. For client id <${clientId}> found type "${typeof ip}".`
         );
         return true;
       }
@@ -740,7 +749,13 @@ export class CastleWarehouse {
       return;
     }
     this.articleStock = new ArticleStock(this);
-    await this.articleStock.initFromSystem();
+    try {
+      await this.articleStock.initFromSystem();
+    } catch (error) {
+      console.error(
+        "Catched error while initiating article stock. Check your database."
+      );
+    }
     return;
   };
 

@@ -137,6 +137,7 @@ allServices.push({
             clientIp
           );
           if (authResponse === undefined || authResponse === false) {
+            console.log(`Client: ${client_id} rejected for ip: ${clientIp}`);
             return handleError(
               res,
               UnknownClientOrBadIpCode,

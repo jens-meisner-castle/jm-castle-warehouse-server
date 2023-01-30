@@ -1,4 +1,4 @@
-import { Table } from "jm-castle-warehouse-types";
+import { ColumnStatus, Table } from "jm-castle-warehouse-types";
 import { MariaDbClient } from "./MariaDb.mjs";
 
 /**  [ {
@@ -25,17 +25,36 @@ import { MariaDbClient } from "./MariaDb.mjs";
     IS_GENERATED: 'NEVER',
     GENERATION_EXPRESSION: null
   }, {...}] */
-export const columns = async (table: Table, client: MariaDbClient) => {
+export const columns = async (
+  table: Table,
+  client: MariaDbClient
+): Promise<
+  { result: ColumnStatus[]; error?: never } | { error: string; result?: never }
+> => {
   try {
     const response: any = await client
       .getSetupPool()
       .query(
-        `SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='${client.getDatabaseName()}' AND TABLE_NAME='${
+        `SELECT COLUMN_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='${client.getDatabaseName()}' AND TABLE_NAME='${
           table.id
         }'`
       );
-    return { result: response.map((row: any) => ({ name: row.COLUMN_NAME })) };
+    return {
+      result: response.map((row: any) => ({
+        name: row.COLUMN_NAME,
+        type: row.COLUMN_TYPE,
+      })),
+    };
   } catch (error) {
     return { error: error.toString() };
   }
 };
+
+export const columnsFragment = (table: Table) =>
+  [
+    ...table.columns.map(
+      (col) =>
+        `${col.name} ${col.type}${col.autoIncrement ? " AUTO_INCREMENT" : ""}`
+    ),
+    table.primaryKey,
+  ].join(", ");

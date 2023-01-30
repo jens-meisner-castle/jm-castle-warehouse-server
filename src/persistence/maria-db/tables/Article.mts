@@ -1,5 +1,5 @@
 import { Table } from "jm-castle-warehouse-types";
-import { masterdataTableColumnsFragment } from "./Masterdata.mjs";
+import { masterdataTableColumns } from "./Masterdata.mjs";
 
 /**
  * Hersteller: zusätzliche Stammdaten
@@ -22,14 +22,14 @@ export const TODO = {
 
 export const TableArticle: Table = {
   id: "article",
-  columnsFragment: [
-    "article_id VARCHAR(100)",
-    "name VARCHAR(100)",
-    "image_refs VARCHAR(500)",
-    "count_unit VARCHAR(100)",
-    "hashtags VARCHAR(500)",
-    "www_link VARCHAR(500)",
-    masterdataTableColumnsFragment(),
-    "PRIMARY KEY(article_id)",
-  ].join(", "),
+  primaryKey: "PRIMARY KEY(article_id)",
+  columns: [
+    { name: "article_id", type: "varchar(100)" },
+    { name: "name", type: "varchar(100)" },
+    { name: "image_refs", type: "varchar(500)" },
+    { name: "count_unit", type: "varchar(100)" },
+    { name: "hashtags", type: "varchar(500)" },
+    { name: "www_link", type: "varchar(500)" },
+    ...masterdataTableColumns(),
+  ],
 };

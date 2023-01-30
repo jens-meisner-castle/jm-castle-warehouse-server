@@ -4,6 +4,7 @@ import {
   ErrorCode,
   InsertResponse,
   Row_Article,
+  Row_Costunit,
   Row_Emission,
   Row_Hashtag,
   Row_ImageContent,
@@ -103,6 +104,15 @@ export interface Persistence {
       select: (filter: Filter_NameLike) => Promise<SelectResponse<Row_Hashtag>>;
       selectByKey: (tagId: string) => Promise<SelectResponse<Row_Hashtag>>;
       all: () => Promise<SelectResponse<Row_Hashtag>>;
+    };
+    costunit: {
+      insert: (values: Row_Costunit) => Promise<InsertResponse<Row_Costunit>>;
+      update: (values: Row_Costunit) => Promise<UpdateResponse<Row_Costunit>>;
+      select: (
+        filter: Filter_NameLike
+      ) => Promise<SelectResponse<Row_Costunit>>;
+      selectByKey: (tagId: string) => Promise<SelectResponse<Row_Costunit>>;
+      all: () => Promise<SelectResponse<Row_Costunit>>;
     };
     receiver: {
       insert: (values: Row_Receiver) => Promise<InsertResponse<Row_Receiver>>;

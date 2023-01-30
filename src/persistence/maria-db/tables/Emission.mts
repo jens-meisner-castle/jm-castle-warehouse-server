@@ -1,25 +1,19 @@
 import { Table } from "jm-castle-warehouse-types";
 
-/**
- * Kostenstelle: zusätzliche Stammdaten
- */
-
-export const TODO = {
-  cost_unit: "???",
-  image_refs: "vergleiche receipt",
-};
-
 export const TableEmission: Table = {
   id: "emission",
-  columnsFragment: [
-    "dataset_id INT AUTO_INCREMENT",
-    "article_id VARCHAR(100)",
-    "section_id VARCHAR(100)",
-    "article_count SMALLINT",
-    "emitted_at INT",
-    "by_user VARCHAR(100)",
-    "reason VARCHAR(100)",
-    "receiver VARCHAR(100)",
-    "PRIMARY KEY(dataset_id)",
-  ].join(", "),
+  primaryKey: "PRIMARY KEY(dataset_id)",
+  columns: [
+    { name: "dataset_id", type: "int(11)", autoIncrement: true },
+    { name: "article_id", type: "varchar(100)" },
+    { name: "section_id", type: "varchar(100)" },
+    { name: "article_count", type: "smallint(6)" },
+    { name: "emitted_at", type: "int(11)" },
+    { name: "by_user", type: "varchar(100)" },
+    { name: "reason", type: "varchar(100)" },
+    { name: "receiver", type: "varchar(100)" },
+    { name: "image_refs", type: "varchar(500)" },
+    { name: "cost_unit", type: "varchar(100)" },
+    { name: "price", type: "int(11)" },
+  ],
 };

@@ -12,6 +12,7 @@ export const home: Example = {
         {
           section_id: "Regal rechts@Kellerraum1",
           name: "Regal rechts",
+          short_id: "1",
           image_refs: '["castle192.png"]',
           articleStock: [
             {
@@ -26,6 +27,8 @@ export const home: Example = {
               ),
               www_link: null,
               reason: "buy",
+              price: 30 * 100,
+              cost_unit: "default",
             },
           ],
         },
@@ -47,6 +50,12 @@ export const home: Example = {
     {
       tag_id: "werkzeug",
       name: "Werkzeuge generell (manuell und elektrisch)",
+    },
+  ],
+  costunit: [
+    {
+      unit_id: "default",
+      name: "Standard (ohne Kostenstelle)",
     },
   ],
   image: [{ image_id: "castle192.png", path: "public/image/castle192.png" }],

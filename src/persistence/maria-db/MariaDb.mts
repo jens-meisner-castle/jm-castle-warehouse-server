@@ -4,6 +4,7 @@ import {
   MariaDatabaseSpec,
   PersistentRow,
   Row_Article,
+  Row_Costunit,
   Row_Emission,
   Row_Hashtag,
   Row_ImageContent,
@@ -25,6 +26,13 @@ import {
   selectByKey as selectByKeyFromArticle,
   update as updateArticle,
 } from "./query/Article.mjs";
+import {
+  all as allFromCostunit,
+  insert as insertCostunit,
+  select as selectFromCostunit,
+  selectByKey as selectByKeyFromCostunit,
+  update as updateCostunit,
+} from "./query/Costunit.mjs";
 import {
   all as allFromEmission,
   insert as insertEmission,
@@ -88,6 +96,7 @@ import {
   update as updateStoreSection,
 } from "./query/StoreSection.mjs";
 import { TableArticle } from "./tables/Article.mjs";
+import { TableCostunit } from "./tables/Costunit.mjs";
 import { TableEmission } from "./tables/Emission.mjs";
 import { TableEmissionRequest } from "./tables/EmissionRequest.mjs";
 import { TableHashtag } from "./tables/Hashtag.mjs";
@@ -108,6 +117,7 @@ export interface RunPartsResponse {
 export const AllTables = [
   TableImageReference,
   TableImageContent,
+  TableCostunit,
   TableReceiver,
   TableHashtag,
   TableStore,
@@ -130,7 +140,7 @@ export class MariaDbClient implements Persistence {
     this.spec = spec;
     return this;
   }
-  public version = "1.0.0";
+  public version = "1.1.0";
   private setupPool: Pool | undefined;
   private databasePool: Pool | undefined;
   private spec: MariaDatabaseSpec;
@@ -281,6 +291,16 @@ export class MariaDbClient implements Persistence {
       selectByKey: (articleId: string) =>
         selectByKeyFromHashtag(articleId, this),
       all: () => allFromHashtag(this),
+    },
+    costunit: {
+      insert: (values: Row_Costunit & PersistentRow) =>
+        insertCostunit(values, this),
+      update: (values: Row_Costunit & PersistentRow) =>
+        updateCostunit(values, this),
+      select: (filter: Filter_NameLike) => selectFromCostunit(filter, this),
+      selectByKey: (articleId: string) =>
+        selectByKeyFromCostunit(articleId, this),
+      all: () => allFromCostunit(this),
     },
     receiver: {
       insert: (values: Row_Receiver & PersistentRow) =>

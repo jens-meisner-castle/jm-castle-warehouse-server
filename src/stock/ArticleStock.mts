@@ -190,6 +190,25 @@ export class ArticleStock {
     this.sectionStock[row.section_id] = {};
   };
 
+  public updateChangedStoreSection = async (row: Row_StoreSection) => {
+    const index = this.storeSections.findIndex(
+      (section) => section.section_id === row.section_id
+    );
+    if (index < 0) {
+      this.storeSections = [...this.storeSections, row];
+    } else {
+      this.storeSections = [
+        ...this.storeSections.slice(0, index),
+        row,
+        ...this.storeSections.slice(
+          index,
+          Math.min(index + 1, this.storeSections.length - 1)
+        ),
+      ];
+    }
+    this.storeSectionHash[row.section_id] = row;
+  };
+
   public updateChangedArticle = async (row: Row_Article) => {
     Object.keys(this.sectionStock).forEach((sectionId) => {
       const perArticle = this.structureForSectionAndArticle(

@@ -6,6 +6,7 @@ import {
   ApiServiceResponse,
   InsertResponse,
   Row_Article,
+  Row_Costunit,
   Row_Hashtag,
   Row_ImageContent,
   Row_Receipt,
@@ -35,6 +36,7 @@ export const createDataFromExample = async (
 ): Promise<ExampleCreationResult> => {
   const receipt_at = Math.ceil(Date.now() / 1000);
   const hashtagRows: Row_Hashtag[] = [];
+  const costunitRows: Row_Costunit[] = [];
   const articleRows: Row_Article[] = [];
   const imageSources: {
     image_id: string;
@@ -51,6 +53,9 @@ export const createDataFromExample = async (
   });
   example.hashtag.forEach((hashtag) => {
     hashtagRows.push({ ...hashtag, ...initialMasterdataFields() });
+  });
+  example.costunit.forEach((costunit) => {
+    costunitRows.push({ ...costunit, ...initialMasterdataFields() });
   });
   for (let i = 0; i < example.image.length; i++) {
     const imageSpec = example.image[i];
@@ -91,6 +96,9 @@ export const createDataFromExample = async (
   try {
     const hashtagResults = await Promise.all(
       hashtagRows.map((row) => persistence.tables.hashtag.insert(row))
+    );
+    const costunitResults = await Promise.all(
+      costunitRows.map((row) => persistence.tables.costunit.insert(row))
     );
     const articleResults = await Promise.all(
       articleRows.map((row) => {
@@ -224,6 +232,7 @@ export const createDataFromExample = async (
     );
     const allErrors: string[] = [];
     hashtagResults.forEach((r) => r.error && allErrors.push(r.error));
+    costunitResults.forEach((r) => r.error && allErrors.push(r.error));
     articleResults.forEach((r) => r.error && allErrors.push(r.error));
     storeResults.forEach((r) => r.error && allErrors.push(r.error));
     sectionResults.forEach((r) => r.error && allErrors.push(r.error));
@@ -241,6 +250,7 @@ export const createDataFromExample = async (
         articleRows,
         receiptRows,
         hashtagRows,
+        costunitRows,
       },
     };
   } catch (error) {

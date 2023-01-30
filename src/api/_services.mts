@@ -4,6 +4,7 @@ import {
 } from "jm-castle-warehouse-types/build";
 import { services as articleServices } from "./article/_services.mjs";
 import { services as authServices } from "./auth/_services.mjs";
+import { services as costunitServices } from "./costunit/_services.mjs";
 import { services as emissionServices } from "./emission/_services.mjs";
 import { services as exampleServices } from "./example/_services.mjs";
 import { services as exportServices } from "./export/_services.mjs";
@@ -37,6 +38,7 @@ allServices.push(...imageContentServices);
 allServices.push(...exportServices);
 allServices.push(...importServices);
 allServices.push(...authServices);
+allServices.push(...costunitServices);
 
 allServices.push({
   url: "/",
