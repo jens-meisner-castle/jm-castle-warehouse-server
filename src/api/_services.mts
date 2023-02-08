@@ -3,6 +3,7 @@ import {
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
 import { services as articleServices } from "./article/_services.mjs";
+import { services as attributeServices } from "./attribute/_services.mjs";
 import { services as authServices } from "./auth/_services.mjs";
 import { services as costunitServices } from "./costunit/_services.mjs";
 import { services as emissionServices } from "./emission/_services.mjs";
@@ -12,6 +13,7 @@ import { services as hashtagServices } from "./hashtag/_services.mjs";
 import { services as imageContentServices } from "./imageContent/_services.mjs";
 import { services as imageReferenceServices } from "./imageReference/_services.mjs";
 import { services as importServices } from "./import/_services.mjs";
+import { services as manufacturerServices } from "./manufacturer/_services.mjs";
 import { services as receiptServices } from "./receipt/_services.mjs";
 import { services as receiverServices } from "./receiver/_services.mjs";
 import { services as stockServices } from "./stock/_services.mjs";
@@ -24,11 +26,13 @@ import { handleError } from "./Utils.mjs";
 const allServices: ApiService[] = [];
 
 allServices.push(...systemServices);
+allServices.push(...attributeServices);
 allServices.push(...storeServices);
 allServices.push(...storeSectionServices);
 allServices.push(...articleServices);
 allServices.push(...hashtagServices);
 allServices.push(...receiverServices);
+allServices.push(...manufacturerServices);
 allServices.push(...receiptServices);
 allServices.push(...exampleServices);
 allServices.push(...emissionServices);

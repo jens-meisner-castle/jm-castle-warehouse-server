@@ -91,7 +91,7 @@ allServices.push({
         const system = getCurrentSystem();
         if (system) {
           await system.restart();
-          const apiResponse: ApiServiceResponse<{ success: true }> = {
+          const apiResponse: ApiServiceResponse<{ success: boolean }> = {
             response: { success: true },
           };
           res.send(apiResponse);

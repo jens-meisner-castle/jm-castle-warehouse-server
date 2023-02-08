@@ -34,12 +34,8 @@ allServices.push({
           withDefaultPersistence(res, async (persistence) => {
             const articleResponse =
               await persistence.tables.article.selectByKey(article_id);
-            const {
-              result: articleResult,
-              error,
-              errorCode,
-              errorDetails,
-            } = articleResponse || {};
+            const { error, errorCode, errorDetails } = articleResponse || {};
+            const articleResult = articleResponse?.result;
             if (
               handleErrorOrUndefinedResult(
                 res,
@@ -51,9 +47,7 @@ allServices.push({
             ) {
               return;
             }
-            const { rows: articleRows } = articleResult || {};
-            const article =
-              articleRows && articleRows.length ? articleRows[0] : undefined;
+            const { row: article } = articleResult || {};
             if (!article) {
               return handleError(
                 res,
@@ -100,6 +94,68 @@ allServices.push({
           };
           return res.send(apiResponse);
         });
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
+
+allServices.push({
+  url: "/stock/section/select",
+  method: "GET",
+  neededRole: "external",
+  parameters: getStrictSingleQueryParametersSchema(
+    "section_id",
+    "The section id for the current stock states.",
+    "string"
+  ),
+  name: "Select stock state of all store sections for a single section.",
+  handler: [
+    async (req, res) => {
+      try {
+        const { section_id = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        if (section_id) {
+          withDefaultPersistence(res, async (persistence) => {
+            const sectionResponse =
+              await persistence.tables.storeSection.selectByKey(section_id);
+            const { error, errorCode, errorDetails } = sectionResponse || {};
+            const sectionResult = sectionResponse?.result;
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                sectionResult,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
+            }
+            const section = sectionResult?.row;
+            if (!section) {
+              return handleError(
+                res,
+                BadRequestBadParameterCode,
+                "For the given section_id is no section available."
+              );
+            }
+            const result = await getCurrentSystem()
+              .getArticleStock()
+              .stockStateForStoreSection(section);
+            const apiResponse: ApiServiceResponse<typeof result> = {
+              response: result,
+            };
+            return res.send(apiResponse);
+          });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?section_id=<id of the section>"
+          );
+        }
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
       }

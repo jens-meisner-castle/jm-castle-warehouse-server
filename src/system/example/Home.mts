@@ -39,11 +39,13 @@ export const home: Example = {
     {
       article_id: "Stichsäge",
       name: "Sichsäge Black & Decker",
+      manufacturer: "Black & Decker",
       www_link:
         "https://www.lidl.de/p/parkside-pendelhubstichsaege-pstd-800-c3/p100335590?mktc=shopping_shop&gclid=CjwKCAiAk--dBhABEiwAchIwkZ89C23oQ1xOzUN19csQ99VR5ZlAaMTseZS8HnJxm47B4SZ4eTyJoBoCKiMQAvD_BwE",
       hashtags: '["werkzeug"]',
       count_unit: "piece",
       image_refs: '["castle192.png"]',
+      attributes: null,
     },
   ],
   hashtag: [
@@ -56,6 +58,12 @@ export const home: Example = {
     {
       unit_id: "default",
       name: "Standard (ohne Kostenstelle)",
+    },
+  ],
+  manufacturer: [
+    {
+      manufacturer_id: "Black & Decker",
+      name: "Black & Decker",
     },
   ],
   image: [{ image_id: "castle192.png", path: "public/image/castle192.png" }],

@@ -4,6 +4,7 @@ import {
   Row_Emission as Row,
   SelectResponse,
 } from "jm-castle-warehouse-types";
+import { PoolConnection } from "mariadb";
 import { without } from "../../../utils/Basic.mjs";
 import { AggreagtionFunction, AggregationFunctions } from "../../Types.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
@@ -20,18 +21,21 @@ export const insert = async (
   values: Row & PersistentRow,
   client: MariaDbClient
 ): Promise<InsertResponse<Row>> => {
+  let connection: PoolConnection | undefined = undefined;
   try {
     const cmd = `INSERT INTO ${table.id} SET${valuesClause(
       without(values, "dataset_id")
     )}`;
     // für LAST_INSERT_ID() muss die selbe connection verwendet werden
-    const connection = await client.getDatabasePool().getConnection();
+    connection = await client.getDatabasePool().getConnection();
     const response = await connection.query(cmd);
     const dataset_id = await selectLastInsertId(connection);
     const { affectedRows } = response || {};
     return { result: { cmd, affectedRows, data: { ...values, dataset_id } } };
   } catch (error) {
     return { error: error.toString() };
+  } finally {
+    connection && connection.destroy();
   }
 };
 

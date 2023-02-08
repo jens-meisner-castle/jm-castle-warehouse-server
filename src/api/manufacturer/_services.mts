@@ -1,14 +1,13 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
-  Row_Article,
+  Row_Manufacturer,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
 import {
   getOptionalSingleQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
 } from "../../json-schema/parameters.mjs";
-import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { addJokerToFilterValue } from "../../utils/Sql.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
@@ -22,25 +21,25 @@ import {
 const allServices: ApiService[] = [];
 
 allServices.push({
-  url: "/article/insert",
+  url: "/manufacturer/insert",
   method: "POST",
   neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
-    "article_id",
-    "The id of the article to create.",
+    "manufacturer_id",
+    "The id of the manufacturer to create.",
     "string"
   ),
-  name: "Insert a new article.",
+  name: "Insert a new manufacturer.",
   handler: [
     async (req, res) => {
       try {
-        const article: Row_Article = req.body;
-        const { article_id = undefined } =
+        const manufacturer: Row_Manufacturer = req.body;
+        const { manufacturer_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        if (article_id) {
+        if (manufacturer_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await getCurrentSystem().api.insertArticle({
-              ...article,
+            const response = await persistence.tables.manufacturer.insert({
+              ...manufacturer,
               ...initialMasterdataFields(),
             });
             const { result, error, errorCode, errorDetails } = response || {};
@@ -64,7 +63,7 @@ allServices.push({
           return handleError(
             res,
             BadRequestMissingParameterCode,
-            "This url needs a query parameter: ...?article_id=<id of the article>"
+            "This url needs a query parameter: ...?manufacturer_id=<id of the manufacturer>"
           );
         }
       } catch (error) {
@@ -75,25 +74,25 @@ allServices.push({
 });
 
 allServices.push({
-  url: "/article/update",
+  url: "/manufacturer/update",
   method: "POST",
   neededRole: "internal",
   parameters: getStrictSingleQueryParametersSchema(
-    "article_id",
-    "The id of the article to update.",
+    "manufacturer_id",
+    "The id of the manufacturer to update.",
     "string"
   ),
-  name: "Update an existing article.",
+  name: "Update an existing manufacturer.",
   handler: [
     async (req, res) => {
       try {
-        const article: Row_Article = req.body;
-        const { article_id = undefined } =
+        const manufacturer: Row_Manufacturer = req.body;
+        const { manufacturer_id = undefined } =
           typeof req.query === "object" ? req.query : {};
-        if (article_id) {
+        if (manufacturer_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const response = await getCurrentSystem().api.updateArticle({
-              ...article,
+            const response = await persistence.tables.manufacturer.update({
+              ...manufacturer,
               ...without(
                 initialMasterdataFields(),
                 "created_at",
@@ -121,7 +120,7 @@ allServices.push({
           return handleError(
             res,
             BadRequestMissingParameterCode,
-            "This url needs a query parameter: ...?article_id=<id of the article>"
+            "This url needs a query parameter: ...?manufacturer_id=<id of the manufacturer>"
           );
         }
       } catch (error) {
@@ -132,58 +131,7 @@ allServices.push({
 });
 
 allServices.push({
-  url: "/article/find",
-  method: "GET",
-  neededRole: "internal",
-  parameters: getStrictSingleQueryParametersSchema(
-    "article_id",
-    "The id of the article to find.",
-    "string"
-  ),
-  name: "Find an article.",
-  handler: [
-    async (req, res) => {
-      try {
-        const { article_id = undefined } =
-          typeof req.query === "object" ? req.query : {};
-        if (article_id) {
-          withDefaultPersistence(res, async (persistence) => {
-            const response = await persistence.tables.article.selectByKey(
-              article_id
-            );
-            const { result, error, errorCode, errorDetails } = response || {};
-            if (
-              handleErrorOrUndefinedResult(
-                res,
-                result,
-                errorCode || "-1",
-                error,
-                errorDetails
-              )
-            ) {
-              return;
-            }
-            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
-              response: { result },
-            };
-            return res.send(apiResponse);
-          });
-        } else {
-          return handleError(
-            res,
-            BadRequestMissingParameterCode,
-            "This url needs a query parameter: ...?article_id=<id of the article>"
-          );
-        }
-      } catch (error) {
-        return handleError(res, UnknownErrorCode, error.toString());
-      }
-    },
-  ],
-});
-
-allServices.push({
-  url: "/article/select",
+  url: "/manufacturer/select",
   method: "GET",
   neededRole: "external",
   parameters: getOptionalSingleQueryParametersSchema(
@@ -191,7 +139,7 @@ allServices.push({
     "A fragment of the name to search.",
     "string"
   ),
-  name: "Select articles by name.",
+  name: "Select manufacturers by name.",
   handler: [
     async (req, res) => {
       try {
@@ -199,7 +147,7 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         const usedName = name ? addJokerToFilterValue(name) : "%";
         withDefaultPersistence(res, async (persistence) => {
-          const response = await persistence.tables.article.select({
+          const response = await persistence.tables.manufacturer.select({
             name: usedName,
           });
           const { result, error, errorCode, errorDetails } = response || {};

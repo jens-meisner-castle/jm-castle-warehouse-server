@@ -16,7 +16,7 @@ import {
 const allServices: ApiService[] = [];
 
 allServices.push({
-  url: "/emission/select",
+  url: "/emission/select/interval",
   method: "GET",
   neededRole: "internal",
   parameters: getQueryParametersSchema(

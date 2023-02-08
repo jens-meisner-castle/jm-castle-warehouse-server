@@ -214,6 +214,7 @@ export const updateImageReferences = async (
       },
     };
   } catch (error) {
+    console.error(error);
     return { error: error.toString() };
   }
 };

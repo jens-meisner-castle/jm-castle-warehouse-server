@@ -2,13 +2,16 @@ import {
   BatchResponse,
   DbExportData,
   ErrorCode,
+  FindResponse,
   InsertResponse,
   Row_Article,
+  Row_Attribute,
   Row_Costunit,
   Row_Emission,
   Row_Hashtag,
   Row_ImageContent,
   Row_ImageReference,
+  Row_Manufacturer,
   Row_Receipt,
   Row_Receiver,
   Row_Store,
@@ -95,8 +98,17 @@ export interface Persistence {
       ) => Promise<SelectResponse<Row_StoreSection>>;
       selectByKey: (
         sectionId: string
-      ) => Promise<SelectResponse<Row_StoreSection>>;
+      ) => Promise<FindResponse<Row_StoreSection>>;
       all: () => Promise<SelectResponse<Row_StoreSection>>;
+    };
+    attribute: {
+      insert: (values: Row_Attribute) => Promise<InsertResponse<Row_Attribute>>;
+      update: (values: Row_Attribute) => Promise<UpdateResponse<Row_Attribute>>;
+      select: (
+        filter: Filter_NameLike
+      ) => Promise<SelectResponse<Row_Attribute>>;
+      selectByKey: (storeId: string) => Promise<SelectResponse<Row_Attribute>>;
+      all: () => Promise<SelectResponse<Row_Attribute>>;
     };
     hashtag: {
       insert: (values: Row_Hashtag) => Promise<InsertResponse<Row_Hashtag>>;
@@ -125,17 +137,36 @@ export interface Persistence {
       ) => Promise<SelectResponse<Row_Receiver>>;
       all: () => Promise<SelectResponse<Row_Receiver>>;
     };
+    manufacturer: {
+      insert: (
+        values: Row_Manufacturer
+      ) => Promise<InsertResponse<Row_Manufacturer>>;
+      update: (
+        values: Row_Manufacturer
+      ) => Promise<UpdateResponse<Row_Manufacturer>>;
+      select: (
+        filter: Filter_NameLike
+      ) => Promise<SelectResponse<Row_Manufacturer>>;
+      selectByKey: (
+        manufacturerId: string
+      ) => Promise<SelectResponse<Row_Manufacturer>>;
+      all: () => Promise<SelectResponse<Row_Manufacturer>>;
+    };
     article: {
       insert: (values: Row_Article) => Promise<InsertResponse<Row_Article>>;
       update: (values: Row_Article) => Promise<UpdateResponse<Row_Article>>;
       select: (filter: Filter_NameLike) => Promise<SelectResponse<Row_Article>>;
-      selectByKey: (articleId: string) => Promise<SelectResponse<Row_Article>>;
+      selectByKey: (articleId: string) => Promise<FindResponse<Row_Article>>;
       all: () => Promise<SelectResponse<Row_Article>>;
     };
     receipt: {
       insert: (values: Row_Receipt) => Promise<InsertResponse<Row_Receipt>>;
       select: (
         filter: Filter_At_FromTo_Seconds
+      ) => Promise<SelectResponse<Row_Receipt>>;
+      selectBySectionAndArticle: (
+        sectionId: string,
+        articleId: string
       ) => Promise<SelectResponse<Row_Receipt>>;
       selectGroupBy: (
         filter: Filter_At_FromTo_Seconds,

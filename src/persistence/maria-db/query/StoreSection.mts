@@ -1,4 +1,5 @@
 import {
+  FindResponse,
   InsertResponse,
   PersistentRow,
   Row_StoreSection as Row,
@@ -45,14 +46,13 @@ export const update = async (
       };
     } else {
       const { result, error } = await selectByKey(section_id, client);
-      const { rows } = result || {};
-      if (rows && rows.length === 1) {
-        const existingRow = rows[0];
+      const { row: existingRow } = result || {};
+      if (existingRow) {
         return {
           error: `The current dataset_version of section (${section_id}) is ${existingRow.dataset_version}. You tried to update with dataset_version ${dataset_version}. Refresh your data first.`,
         };
       }
-      if (rows && rows.length === 0) {
+      if (!existingRow) {
         return { error: `The section (${section_id}) was not found.` };
       }
       if (error) {
@@ -72,13 +72,13 @@ export const update = async (
 export const selectByKey = async (
   sectionId: string,
   client: MariaDbClient
-): Promise<SelectResponse<Row>> => {
+): Promise<FindResponse<Row>> => {
   try {
     const cmd = `SELECT * FROM ${table.id} WHERE section_id = '${sectionId}'`;
     const queryResult = await client.getDatabasePool().query(cmd);
-    const rows: Row[] = [];
-    queryResult.forEach((r: Row) => rows.push(r));
-    return { result: { cmd, rows } };
+    let row: Row | undefined = undefined;
+    queryResult.forEach((r: Row) => (row = r));
+    return { result: { cmd, row } };
   } catch (error) {
     return { error: error.toString() };
   }

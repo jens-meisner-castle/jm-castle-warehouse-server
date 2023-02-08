@@ -1,6 +1,6 @@
 {
   "name": "jm-castle-warehouse-server",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "type": "module",
   "module": "./build",
   "files": [
@@ -26,6 +26,7 @@
     "dev:serve": "cross-env NODE_ENV=development ts-node-dev --inspect=9229 --nolazy --respawn ./src -r ts-node/register src/."
   },
   "peerDependencies": {
+    "jm-castle-types": "^0.x",
     "jm-castle-warehouse-types": "^0.x"
   },
   "dependencies": {
@@ -62,7 +63,8 @@
     "@typescript-eslint/eslint-plugin": "^5.37.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.23.1",
-    "jm-castle-warehouse-types": "^0.12.1",
+    "jm-castle-types": "^0.0.4",
+    "jm-castle-warehouse-types": "^0.14.1",
     "nodemon": "^2.0.19",
     "prettier": "^2.7.1",
     "ts-node": "^10.9.1",

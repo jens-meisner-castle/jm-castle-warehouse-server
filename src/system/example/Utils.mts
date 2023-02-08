@@ -9,6 +9,7 @@ import {
   Row_Costunit,
   Row_Hashtag,
   Row_ImageContent,
+  Row_Manufacturer,
   Row_Receipt,
   Row_Store,
   Row_StoreSection,
@@ -37,6 +38,7 @@ export const createDataFromExample = async (
   const receipt_at = Math.ceil(Date.now() / 1000);
   const hashtagRows: Row_Hashtag[] = [];
   const costunitRows: Row_Costunit[] = [];
+  const manufacturerRows: Row_Manufacturer[] = [];
   const articleRows: Row_Article[] = [];
   const imageSources: {
     image_id: string;
@@ -56,6 +58,9 @@ export const createDataFromExample = async (
   });
   example.costunit.forEach((costunit) => {
     costunitRows.push({ ...costunit, ...initialMasterdataFields() });
+  });
+  example.manufacturer.forEach((manufacturer) => {
+    manufacturerRows.push({ ...manufacturer, ...initialMasterdataFields() });
   });
   for (let i = 0; i < example.image.length; i++) {
     const imageSpec = example.image[i];
@@ -99,6 +104,9 @@ export const createDataFromExample = async (
     );
     const costunitResults = await Promise.all(
       costunitRows.map((row) => persistence.tables.costunit.insert(row))
+    );
+    const manufacturerResults = await Promise.all(
+      manufacturerRows.map((row) => persistence.tables.manufacturer.insert(row))
     );
     const articleResults = await Promise.all(
       articleRows.map((row) => {
@@ -233,6 +241,7 @@ export const createDataFromExample = async (
     const allErrors: string[] = [];
     hashtagResults.forEach((r) => r.error && allErrors.push(r.error));
     costunitResults.forEach((r) => r.error && allErrors.push(r.error));
+    manufacturerResults.forEach((r) => r.error && allErrors.push(r.error));
     articleResults.forEach((r) => r.error && allErrors.push(r.error));
     storeResults.forEach((r) => r.error && allErrors.push(r.error));
     sectionResults.forEach((r) => r.error && allErrors.push(r.error));
@@ -251,6 +260,7 @@ export const createDataFromExample = async (
         receiptRows,
         hashtagRows,
         costunitRows,
+        manufacturerRows,
       },
     };
   } catch (error) {

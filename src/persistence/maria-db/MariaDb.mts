@@ -4,11 +4,13 @@ import {
   MariaDatabaseSpec,
   PersistentRow,
   Row_Article,
+  Row_Attribute,
   Row_Costunit,
   Row_Emission,
   Row_Hashtag,
   Row_ImageContent,
   Row_ImageReference,
+  Row_Manufacturer,
   Row_Receipt,
   Row_Receiver,
   Row_Store,
@@ -26,6 +28,13 @@ import {
   selectByKey as selectByKeyFromArticle,
   update as updateArticle,
 } from "./query/Article.mjs";
+import {
+  all as allFromAttribute,
+  insert as insertAttribute,
+  select as selectFromAttribute,
+  selectByKey as selectByKeyFromAttribute,
+  update as updateAttribute,
+} from "./query/Attribute.mjs";
 import {
   all as allFromCostunit,
   insert as insertCostunit,
@@ -62,6 +71,13 @@ import {
   updateImageReferences,
 } from "./query/ImageReference.mjs";
 import {
+  all as allFromManufacturer,
+  insert as insertManufacturer,
+  select as selectFromManufacturer,
+  selectByKey as selectByKeyFromManufacturer,
+  update as updateManufacturer,
+} from "./query/Manufacturer.mjs";
+import {
   Filter_At_FromTo_Seconds,
   Filter_ImageExtension,
   Filter_ImageId,
@@ -72,6 +88,7 @@ import {
   all as allFromReceipt,
   insert as insertReceipt,
   select as selectFromReceipt,
+  selectBySectionAndArticle as selectBySectionAndArticleFromReceipt,
   selectGroupBy as selectGroupByFromReceipt,
 } from "./query/Receipt.mjs";
 import {
@@ -96,12 +113,14 @@ import {
   update as updateStoreSection,
 } from "./query/StoreSection.mjs";
 import { TableArticle } from "./tables/Article.mjs";
+import { TableAttribute } from "./tables/Attribute.mjs";
 import { TableCostunit } from "./tables/Costunit.mjs";
 import { TableEmission } from "./tables/Emission.mjs";
 import { TableEmissionRequest } from "./tables/EmissionRequest.mjs";
 import { TableHashtag } from "./tables/Hashtag.mjs";
 import { TableImageContent } from "./tables/ImageContent.mjs";
 import { TableImageReference } from "./tables/ImageReference.mjs";
+import { TableManufacturer } from "./tables/Manufacturer.mjs";
 import { TableReceipt } from "./tables/Receipt.mjs";
 import { TableReceiptRequest } from "./tables/ReceiptRequest.mjs";
 import { TableReceiver } from "./tables/Receiver.mjs";
@@ -115,10 +134,12 @@ export interface RunPartsResponse {
 }
 
 export const AllTables = [
+  TableAttribute,
   TableImageReference,
   TableImageContent,
   TableCostunit,
   TableReceiver,
+  TableManufacturer,
   TableHashtag,
   TableStore,
   TableStoreSection,
@@ -140,7 +161,7 @@ export class MariaDbClient implements Persistence {
     this.spec = spec;
     return this;
   }
-  public version = "1.1.0";
+  public version = "1.2.0";
   private setupPool: Pool | undefined;
   private databasePool: Pool | undefined;
   private spec: MariaDatabaseSpec;
@@ -255,6 +276,16 @@ export class MariaDbClient implements Persistence {
         selectFromImageContentLikeImageId(filter, this),
       all: () => allFromImageContent(this),
     },
+    attribute: {
+      insert: (values: Row_Attribute & PersistentRow) =>
+        insertAttribute(values, this),
+      update: (values: Row_Attribute & PersistentRow) =>
+        updateAttribute(values, this),
+      select: (filter: Filter_NameLike) => selectFromAttribute(filter, this),
+      selectByKey: (attributeId: string) =>
+        selectByKeyFromAttribute(attributeId, this),
+      all: () => allFromAttribute(this),
+    },
     store: {
       insert: (values: Row_Store & PersistentRow) => insertStore(values, this),
       update: (values: Row_Store & PersistentRow) => updateStore(values, this),
@@ -312,11 +343,23 @@ export class MariaDbClient implements Persistence {
         selectByKeyFromReceiver(articleId, this),
       all: () => allFromReceiver(this),
     },
+    manufacturer: {
+      insert: (values: Row_Manufacturer & PersistentRow) =>
+        insertManufacturer(values, this),
+      update: (values: Row_Manufacturer & PersistentRow) =>
+        updateManufacturer(values, this),
+      select: (filter: Filter_NameLike) => selectFromManufacturer(filter, this),
+      selectByKey: (articleId: string) =>
+        selectByKeyFromManufacturer(articleId, this),
+      all: () => allFromManufacturer(this),
+    },
     receipt: {
       insert: (values: Row_Receipt & PersistentRow) =>
         insertReceipt(values, this),
       select: (filter: Filter_At_FromTo_Seconds) =>
         selectFromReceipt(filter, this),
+      selectBySectionAndArticle: (sectionId: string, articleId: string) =>
+        selectBySectionAndArticleFromReceipt(sectionId, articleId, this),
       selectGroupBy: (
         filter: Filter_At_FromTo_Seconds,
         groupBy: Array<keyof Row_Receipt>,

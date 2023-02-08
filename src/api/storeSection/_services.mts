@@ -92,9 +92,6 @@ allServices.push({
           typeof req.query === "object" ? req.query : {};
         if (section_id) {
           withDefaultPersistence(res, async (persistence) => {
-            const { result: selectResult } =
-              await persistence.tables.storeSection.selectByKey(section_id);
-            const { rows } = selectResult || {};
             const response = await getCurrentSystem().api.updateStoreSection({
               ...storeSection,
               ...without(
@@ -171,6 +168,57 @@ allServices.push({
           };
           return res.send(apiResponse);
         });
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
+
+allServices.push({
+  url: "/store-section/find",
+  method: "GET",
+  neededRole: "external",
+  parameters: getStrictSingleQueryParametersSchema(
+    "section_id",
+    "The id of the section to find.",
+    "string"
+  ),
+  name: "Find a section.",
+  handler: [
+    async (req, res) => {
+      try {
+        const { section_id = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        if (section_id) {
+          withDefaultPersistence(res, async (persistence) => {
+            const response = await persistence.tables.storeSection.selectByKey(
+              section_id
+            );
+            const { result, error, errorCode, errorDetails } = response || {};
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                result,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
+            }
+            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+              response: { result },
+            };
+            return res.send(apiResponse);
+          });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?section_id=<id of the section>"
+          );
+        }
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
       }

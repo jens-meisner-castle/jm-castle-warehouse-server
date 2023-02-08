@@ -147,6 +147,25 @@ export class ArticleStock {
     return result;
   };
 
+  public stockStateForStoreSection = async (
+    section: Row_StoreSection
+  ): Promise<SectionStockState> => {
+    const result: SectionStockState = { section, states: [] };
+    const stock = this.sectionStock[section.section_id];
+    if (stock) {
+      Object.keys(stock).forEach((articleId) => {
+        const { article, base, emitted, receipt } = stock[articleId];
+        const physicalCount = base + receipt - emitted;
+        result.states.push({
+          article,
+          physicalCount,
+          availableCount: physicalCount,
+        });
+      });
+    }
+    return result;
+  };
+
   public stockStateForAllStoreSections = async () => {
     const result: Record<string, SectionStockState> = {};
     Object.keys(this.sectionStock).forEach((sectionId) => {
@@ -227,8 +246,7 @@ export class ArticleStock {
         .getDefaultPersistence()
         .tables.article.selectByKey(article_id);
       const { result } = articleResponse;
-      const { rows } = result || {};
-      const article = rows?.length ? rows[0] : undefined;
+      const { row: article } = result || {};
       perArticle =
         article && this.getStructureForSectionAndArticle(section_id, article);
     }
@@ -245,8 +263,7 @@ export class ArticleStock {
         .getDefaultPersistence()
         .tables.article.selectByKey(article_id);
       const { result } = articleResponse;
-      const { rows } = result || {};
-      const article = rows?.length ? rows[0] : undefined;
+      const { row: article } = result || {};
       perArticle =
         article && this.getStructureForSectionAndArticle(section_id, article);
     }

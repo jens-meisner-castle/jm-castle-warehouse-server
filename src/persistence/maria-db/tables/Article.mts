@@ -30,6 +30,8 @@ export const TableArticle: Table = {
     { name: "count_unit", type: "varchar(100)" },
     { name: "hashtags", type: "varchar(500)" },
     { name: "www_link", type: "varchar(500)" },
+    { name: "manufacturer", type: "varchar(100)" },
+    { name: "attributes", type: "varchar(2000)" },
     ...masterdataTableColumns(),
   ],
 };

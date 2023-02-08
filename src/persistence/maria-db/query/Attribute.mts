@@ -1,8 +1,7 @@
 import {
-  FindResponse,
   InsertResponse,
   PersistentRow,
-  Row_Article as Row,
+  Row_Attribute as Row,
   SelectResponse,
   SqlDataErrorCode,
   UpdateResponse,
@@ -10,10 +9,10 @@ import {
 import { SqlError } from "mariadb";
 import { without } from "../../../utils/Basic.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
-import { TableArticle } from "../tables/Article.mjs";
+import { TableAttribute } from "../tables/Attribute.mjs";
 import { Filter_NameLike, valuesClause } from "./QueryUtils.mjs";
 
-const table = TableArticle;
+const table = TableAttribute;
 
 export const insert = async (
   values: Row & PersistentRow,
@@ -39,12 +38,12 @@ export const update = async (
   client: MariaDbClient
 ): Promise<UpdateResponse<Row>> => {
   try {
-    const { article_id, dataset_version } = values;
-    const valuesToUpdate = without({ ...values }, "article_id");
+    const { attribute_id, dataset_version } = values;
+    const valuesToUpdate = without({ ...values }, "attribute_id");
     valuesToUpdate.dataset_version = dataset_version + 1;
     const cmd = `UPDATE ${table.id} SET${valuesClause(
       valuesToUpdate
-    )} WHERE article_id = '${article_id}' AND dataset_version = ${dataset_version}`;
+    )} WHERE attribute_id = '${attribute_id}' AND dataset_version = ${dataset_version}`;
     const response: any = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
     if (affectedRows === 1) {
@@ -52,23 +51,24 @@ export const update = async (
         result: { cmd, affectedRows, data: { ...values, ...valuesToUpdate } },
       };
     } else {
-      const { result, error } = await selectByKey(article_id, client);
-      const { row: existingRow } = result || {};
-      if (existingRow) {
+      const { result, error } = await selectByKey(attribute_id, client);
+      const { rows } = result || {};
+      if (rows && rows.length === 1) {
+        const existingRow = rows[0];
         return {
-          error: `The current dataset_version of article (${article_id}) is ${existingRow.dataset_version}. You tried to update with dataset_version ${dataset_version}. Refresh your data first.`,
+          error: `The current dataset_version of attribute (${attribute_id}) is ${existingRow.dataset_version}. You tried to update with dataset_version ${dataset_version}. Refresh your data first.`,
         };
       }
-      if (!existingRow) {
-        return { error: `The article (${article_id}) was not found.` };
+      if (rows && rows.length === 0) {
+        return { error: `The attribute (${attribute_id}) was not found.` };
       }
       if (error) {
         return {
-          error: `Article (${article_id}) was not updated. Received error when checking for reason: ${error}`,
+          error: `Attribute (${attribute_id}) was not updated. Received error when checking for reason: ${error}`,
         };
       }
       return {
-        error: `Fatal error when updating article (${article_id}). Article was not updated.`,
+        error: `Fatal error when updating attribute (${attribute_id}). Attribute was not updated.`,
       };
     }
   } catch (error) {
@@ -77,15 +77,15 @@ export const update = async (
 };
 
 export const selectByKey = async (
-  articleId: string,
+  tagId: string,
   client: MariaDbClient
-): Promise<FindResponse<Row>> => {
+): Promise<SelectResponse<Row>> => {
   try {
-    const cmd = `SELECT * FROM ${table.id} WHERE article_id = '${articleId}'`;
+    const cmd = `SELECT * FROM ${table.id} WHERE attribute_id = '${tagId}'`;
     const queryResult = await client.getDatabasePool().query(cmd);
-    let row: Row | undefined = undefined;
-    queryResult.forEach((r: Row) => (row = r));
-    return { result: { cmd, row } };
+    const rows: Row[] = [];
+    queryResult.forEach((r: Row) => rows.push(r));
+    return { result: { cmd, rows } };
   } catch (error) {
     return { error: error.toString() };
   }

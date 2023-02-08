@@ -88,8 +88,7 @@ export class CastleWarehouse {
       const { article_id, image_refs } = row;
       const { result: selectResult } =
         await this.defaultPersistence.tables.article.selectByKey(article_id);
-      const { rows } = selectResult || {};
-      const previous = rows?.length ? rows[0] : undefined;
+      const { row: previous } = selectResult || {};
       const response = await this.defaultPersistence.tables.article.update(row);
       if (response.error) {
         return response;
@@ -157,9 +156,10 @@ export class CastleWarehouse {
     updateStoreSection: async (row: Row_StoreSection) => {
       const { section_id, image_refs } = row;
       const { result: selectResult } =
-        await this.defaultPersistence.tables.store.selectByKey(section_id);
-      const { rows } = selectResult || {};
-      const previous = rows?.length ? rows[0] : undefined;
+        await this.defaultPersistence.tables.storeSection.selectByKey(
+          section_id
+        );
+      const { row: previous } = selectResult || {};
       const response = await this.defaultPersistence.tables.storeSection.update(
         row
       );
@@ -249,7 +249,8 @@ export class CastleWarehouse {
       return undefined;
     }
     const { ip, id, user } = clientSettings;
-    if (!ip.includes(clientIp) || clientId !== id) {
+    const validIp = ip.find((s) => new RegExp(s).test(s));
+    if (!validIp || clientId !== id) {
       return false;
     }
     return { user };
