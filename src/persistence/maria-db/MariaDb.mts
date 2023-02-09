@@ -16,6 +16,7 @@ import {
   Row_Store,
   Row_StoreSection,
   SelectResponse,
+  Table,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types";
 import { createPool, Pool } from "mariadb";
@@ -112,6 +113,7 @@ import {
   selectByKey as selectByKeyFromStoreSection,
   update as updateStoreSection,
 } from "./query/StoreSection.mjs";
+import { countOfRowsForTables } from "./Table.mjs";
 import { TableArticle } from "./tables/Article.mjs";
 import { TableAttribute } from "./tables/Attribute.mjs";
 import { TableCostunit } from "./tables/Costunit.mjs";
@@ -249,6 +251,10 @@ export class MariaDbClient implements Persistence {
   };
 
   public tables = {
+    stats: {
+      countOfRowsForTables: (...tables: Table[]) =>
+        countOfRowsForTables(this, ...tables),
+    },
     imageReference: {
       insert: (values: Row_ImageReference & PersistentRow) =>
         insertImageReference(values, this),

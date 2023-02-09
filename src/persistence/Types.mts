@@ -17,6 +17,7 @@ import {
   Row_Store,
   Row_StoreSection,
   SelectResponse,
+  Table,
   UpdateResponse,
 } from "jm-castle-warehouse-types";
 
@@ -43,6 +44,11 @@ export interface Persistence {
     | { tables?: never; error: string; errorCode: ErrorCode }
   >;
   tables: {
+    stats: {
+      countOfRowsForTables: (
+        ...tables: Table[]
+      ) => Promise<FindResponse<{ table: string; countOfRows: number }>[]>;
+    };
     imageReference: {
       insert: (
         values: Row_ImageReference

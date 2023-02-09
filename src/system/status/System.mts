@@ -249,7 +249,7 @@ export class CastleWarehouse {
       return undefined;
     }
     const { ip, id, user } = clientSettings;
-    const validIp = ip.find((s) => new RegExp(s).test(s));
+    const validIp = ip.find((s) => clientIp.match(s));
     if (!validIp || clientId !== id) {
       return false;
     }

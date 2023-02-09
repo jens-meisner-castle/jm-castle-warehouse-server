@@ -1,4 +1,4 @@
-import { ColumnStatus, Table } from "jm-castle-warehouse-types";
+import { ColumnStatus, FindResponse, Table } from "jm-castle-warehouse-types";
 import { MariaDbClient } from "./MariaDb.mjs";
 
 /**  [ {
@@ -47,6 +47,45 @@ export const columns = async (
     };
   } catch (error) {
     return { error: error.toString() };
+  }
+};
+
+export const countOfRowsForTable = async (
+  client: MariaDbClient,
+  table: Table
+): Promise<FindResponse<{ table: string; countOfRows: number }>> => {
+  try {
+    const cmd = `SELECT COUNT(*) as count_of_rows FROM ${table.id}`;
+    const response: any = await client.getDatabasePool().query(cmd);
+    let row: { count_of_rows: number | bigint } | undefined = undefined;
+    response.forEach((r: { count_of_rows: number }) => (row = r));
+    const dbCount = row ? row.count_of_rows : 0;
+    const countOfRows =
+      typeof dbCount === "bigint"
+        ? Number.parseInt(dbCount.toString())
+        : dbCount;
+
+    return {
+      result: {
+        cmd,
+        row: { table: table.id, countOfRows },
+      },
+    };
+  } catch (error) {
+    return { error: error.toString() };
+  }
+};
+
+export const countOfRowsForTables = async (
+  client: MariaDbClient,
+  ...tables: Table[]
+): Promise<FindResponse<{ table: string; countOfRows: number }>[]> => {
+  try {
+    return await Promise.all(
+      tables.map((table) => countOfRowsForTable(client, table))
+    );
+  } catch (error) {
+    return [{ error: error.toString() }];
   }
 };
 

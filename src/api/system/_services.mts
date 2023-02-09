@@ -1,14 +1,65 @@
 import {
   ApiServiceResponse,
+  BadRequestMissingParameterCode,
   CastleConfigErrorCode,
+  FindResponse,
+  Table,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
+import { AllTables } from "../../persistence/maria-db/MariaDb.mjs";
 import { executeSetup } from "../../system/setup/ExecuteSetup.mjs";
 import { getSystemSetupStatus } from "../../system/setup/Status.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { ApiService } from "../Types.mjs";
 import { handleError, withDefaultPersistence } from "../Utils.mjs";
 const allServices: ApiService[] = [];
+
+allServices.push({
+  url: "/system/stats/count",
+  method: "GET",
+  neededRole: "external",
+  name: "Get counts for system tables.",
+  handler: [
+    async (req, res) => {
+      try {
+        const { table = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        if (table) {
+          const tableNames = Array.isArray(table)
+            ? table
+            : typeof table === "string"
+            ? [table]
+            : [];
+          const tableObjects: Table[] = [];
+          tableNames.forEach((t) => {
+            const tableObj = AllTables.find((obj) => obj.id === t);
+            tableObj && tableObjects.push(tableObj);
+          });
+          withDefaultPersistence(res, async (persistence) => {
+            const response =
+              await persistence.tables.stats.countOfRowsForTables(
+                ...tableObjects
+              );
+            const apiResponse: ApiServiceResponse<
+              FindResponse<{ table: string; countOfRows: number }>[]
+            > = {
+              response,
+            };
+            return res.send(apiResponse);
+          });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs a query parameter: ...?table=<id of a table>"
+          );
+        }
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
 
 allServices.push({
   url: "/system/status",
@@ -38,6 +89,7 @@ allServices.push({
     },
   ],
 });
+
 allServices.push({
   url: "/system/setup-status",
   method: "GET",
