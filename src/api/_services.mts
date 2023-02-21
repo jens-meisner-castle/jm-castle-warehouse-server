@@ -20,6 +20,7 @@ import { services as stockServices } from "./stock/_services.mjs";
 import { services as storeServices } from "./store/_services.mjs";
 import { services as storeSectionServices } from "./storeSection/_services.mjs";
 import { services as systemServices } from "./system/_services.mjs";
+import { services as masterdataServices } from "./masterdata/_services.mjs";
 import { ApiService, getSerializableServices } from "./Types.mjs";
 import { handleError } from "./Utils.mjs";
 
@@ -43,6 +44,7 @@ allServices.push(...exportServices);
 allServices.push(...importServices);
 allServices.push(...authServices);
 allServices.push(...costunitServices);
+allServices.push(...masterdataServices);
 
 allServices.push({
   url: "/",

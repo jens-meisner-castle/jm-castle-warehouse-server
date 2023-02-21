@@ -80,6 +80,7 @@ import {
 } from "./query/Manufacturer.mjs";
 import {
   Filter_At_FromTo_Seconds,
+  Filter_Hashtag,
   Filter_ImageExtension,
   Filter_ImageId,
   Filter_NameLike,
@@ -113,7 +114,10 @@ import {
   selectByKey as selectByKeyFromStoreSection,
   update as updateStoreSection,
 } from "./query/StoreSection.mjs";
-import { countOfRowsForTables } from "./Table.mjs";
+import {
+  countOfRowsForTables,
+  selectMasterdataRowsEditedByInterval,
+} from "./Table.mjs";
 import { TableArticle } from "./tables/Article.mjs";
 import { TableAttribute } from "./tables/Attribute.mjs";
 import { TableCostunit } from "./tables/Costunit.mjs";
@@ -135,17 +139,21 @@ export interface RunPartsResponse {
   errors?: string[];
 }
 
+export const MasterdataTables = {
+  [TableAttribute.id]: TableAttribute,
+  [TableImageReference.id]: TableImageReference,
+  [TableImageContent.id]: TableImageContent,
+  [TableCostunit.id]: TableCostunit,
+  [TableReceiver.id]: TableReceiver,
+  [TableManufacturer.id]: TableManufacturer,
+  [TableHashtag.id]: TableHashtag,
+  [TableStore.id]: TableStore,
+  [TableStoreSection.id]: TableStoreSection,
+  [TableArticle.id]: TableArticle,
+};
+
 export const AllTables = [
-  TableAttribute,
-  TableImageReference,
-  TableImageContent,
-  TableCostunit,
-  TableReceiver,
-  TableManufacturer,
-  TableHashtag,
-  TableStore,
-  TableStoreSection,
-  TableArticle,
+  ...Object.values(MasterdataTables),
   TableReceipt,
   TableEmission,
   TableReceiptRequest,
@@ -255,6 +263,17 @@ export class MariaDbClient implements Persistence {
       countOfRowsForTables: (...tables: Table[]) =>
         countOfRowsForTables(this, ...tables),
     },
+    masterdata: {
+      selectEditedAtFromTo: (
+        source: keyof typeof MasterdataTables,
+        filter: Filter_At_FromTo_Seconds
+      ) =>
+        selectMasterdataRowsEditedByInterval(
+          this,
+          MasterdataTables[source],
+          filter
+        ),
+    },
     imageReference: {
       insert: (values: Row_ImageReference & PersistentRow) =>
         insertImageReference(values, this),
@@ -314,7 +333,8 @@ export class MariaDbClient implements Persistence {
         insertArticle(values, this),
       update: (values: Row_Article & PersistentRow) =>
         updateArticle(values, this),
-      select: (filter: Filter_NameLike) => selectFromArticle(filter, this),
+      select: (filter: Filter_NameLike & Partial<Filter_Hashtag>) =>
+        selectFromArticle(filter, this),
       selectByKey: (articleId: string) =>
         selectByKeyFromArticle(articleId, this),
       all: () => allFromArticle(this),

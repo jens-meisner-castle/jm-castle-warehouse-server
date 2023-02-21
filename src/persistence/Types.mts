@@ -12,6 +12,7 @@ import {
   Row_ImageContent,
   Row_ImageReference,
   Row_Manufacturer,
+  Row_Masterdata,
   Row_Receipt,
   Row_Receiver,
   Row_Store,
@@ -20,9 +21,11 @@ import {
   Table,
   UpdateResponse,
 } from "jm-castle-warehouse-types";
+import { MasterdataTables } from "./maria-db/MariaDb.mjs";
 
 import {
   Filter_At_FromTo_Seconds,
+  Filter_Hashtag,
   Filter_ImageExtension,
   Filter_ImageId,
   Filter_NameLike,
@@ -48,6 +51,12 @@ export interface Persistence {
       countOfRowsForTables: (
         ...tables: Table[]
       ) => Promise<FindResponse<{ table: string; countOfRows: number }>[]>;
+    };
+    masterdata: {
+      selectEditedAtFromTo: (
+        source: keyof typeof MasterdataTables,
+        filter: Filter_At_FromTo_Seconds
+      ) => Promise<SelectResponse<Row_Masterdata>>;
     };
     imageReference: {
       insert: (
@@ -161,7 +170,9 @@ export interface Persistence {
     article: {
       insert: (values: Row_Article) => Promise<InsertResponse<Row_Article>>;
       update: (values: Row_Article) => Promise<UpdateResponse<Row_Article>>;
-      select: (filter: Filter_NameLike) => Promise<SelectResponse<Row_Article>>;
+      select: (
+        filter: Filter_NameLike & Partial<Filter_Hashtag>
+      ) => Promise<SelectResponse<Row_Article>>;
       selectByKey: (articleId: string) => Promise<FindResponse<Row_Article>>;
       all: () => Promise<SelectResponse<Row_Article>>;
     };

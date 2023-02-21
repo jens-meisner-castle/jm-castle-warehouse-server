@@ -1,5 +1,12 @@
-import { ColumnStatus, FindResponse, Table } from "jm-castle-warehouse-types";
+import {
+  ColumnStatus,
+  FindResponse,
+  Row_Masterdata,
+  SelectResponse,
+  Table,
+} from "jm-castle-warehouse-types";
 import { MariaDbClient } from "./MariaDb.mjs";
+import { Filter_At_FromTo_Seconds } from "./query/QueryUtils.mjs";
 
 /**  [ {
     TABLE_CATALOG: 'def',
@@ -97,3 +104,20 @@ export const columnsFragment = (table: Table) =>
     ),
     table.primaryKey,
   ].join(", ");
+
+export const selectMasterdataRowsEditedByInterval = async (
+  client: MariaDbClient,
+  table: Table,
+  filter: Filter_At_FromTo_Seconds
+): Promise<SelectResponse<Row_Masterdata>> => {
+  try {
+    const { at_from, at_to } = filter;
+    const cmd = `SELECT * FROM ${table.id} WHERE edited_at BETWEEN ${at_from} AND ${at_to} `;
+    const response: any = await client.getDatabasePool().query(cmd);
+    const rows: Row_Masterdata[] = [];
+    response.forEach((r: Row_Masterdata) => rows.push(r));
+    return { result: { cmd, rows } };
+  } catch (error) {
+    return { error: error.toString() };
+  }
+};

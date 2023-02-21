@@ -5,7 +5,7 @@ import {
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
 import {
-  getOptionalSingleQueryParametersSchema,
+  getQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
 } from "../../json-schema/parameters.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
@@ -186,21 +186,21 @@ allServices.push({
   url: "/article/select",
   method: "GET",
   neededRole: "external",
-  parameters: getOptionalSingleQueryParametersSchema(
-    "name",
-    "A fragment of the name to search.",
-    "string"
+  parameters: getQueryParametersSchema(
+    ["name", "string", false, "A fragment of the name to search."],
+    ["hashtag", "string", false, "A hashtag of the article to search."]
   ),
   name: "Select articles by name.",
   handler: [
     async (req, res) => {
       try {
-        const { name = undefined } =
+        const { name = undefined, hashtag = undefined } =
           typeof req.query === "object" ? req.query : {};
         const usedName = name ? addJokerToFilterValue(name) : "%";
         withDefaultPersistence(res, async (persistence) => {
           const response = await persistence.tables.article.select({
             name: usedName,
+            hashtag: typeof hashtag === "string" ? [hashtag] : hashtag,
           });
           const { result, error, errorCode, errorDetails } = response || {};
           if (

@@ -36,14 +36,22 @@ export const getOptionalSingleQueryParametersSchema = (
 });
 /**
  *
- * @param tuples [field, type, required?, description]
+ * @param tuples [field, type, required?, description, optional enumeration]
  * @returns JSON Schema
  */
 export const getQueryParametersSchema = (
-  ...tuples: [string, "string" | "integer", boolean, string][]
+  ...tuples: (
+    | [string, "string" | "integer", boolean, string]
+    | [string, "string" | "integer", boolean, string, string[] | undefined]
+  )[]
 ): QueryParametersSchema => {
   const properties: Record<string, unknown> = {};
-  tuples.forEach((t) => (properties[t[0]] = { type: t[1], description: t[3] }));
+  tuples.forEach((t) => {
+    const enumeration = t[4];
+    properties[t[0]] = enumeration
+      ? { type: t[1], description: t[3], enum: enumeration }
+      : { type: t[1], description: t[3] };
+  });
   const required = tuples.filter((t) => t[2]).map((t) => t[0]);
   return {
     type: "object",

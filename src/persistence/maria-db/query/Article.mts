@@ -11,7 +11,11 @@ import { SqlError } from "mariadb";
 import { without } from "../../../utils/Basic.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
 import { TableArticle } from "../tables/Article.mjs";
-import { Filter_NameLike, valuesClause } from "./QueryUtils.mjs";
+import {
+  Filter_Hashtag,
+  Filter_NameLike,
+  valuesClause,
+} from "./QueryUtils.mjs";
 
 const table = TableArticle;
 
@@ -92,12 +96,17 @@ export const selectByKey = async (
 };
 
 export const select = async (
-  filter: Filter_NameLike,
+  filter: Filter_NameLike & Partial<Filter_Hashtag>,
   client: MariaDbClient
 ): Promise<SelectResponse<Row>> => {
   try {
-    const { name } = filter;
-    const cmd = `SELECT * FROM ${table.id} WHERE name LIKE '${name}'`;
+    const { name, hashtag } = filter;
+    const hashtagClause = hashtag
+      ? hashtag.map((s) => `hashtags LIKE '%"${s}"%'`).join(" OR ")
+      : undefined;
+    const cmd = hashtagClause
+      ? `SELECT * FROM ${table.id} WHERE name LIKE '${name}' AND (${hashtagClause})`
+      : `SELECT * FROM ${table.id} WHERE name LIKE '${name}'`;
     const queryResult = await client.getDatabasePool().query(cmd);
     const rows: Row[] = [];
     queryResult.forEach((r: Row) => rows.push(r));

@@ -15,6 +15,10 @@ export interface Filter_NameLike {
   name: string;
 }
 
+export interface Filter_Hashtag {
+  hashtag: string[];
+}
+
 export type Filter_ImageId = {
   image_id: string;
   reference?: never;
