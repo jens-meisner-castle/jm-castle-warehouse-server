@@ -105,6 +105,16 @@ export const columnsFragment = (table: Table) =>
     table.primaryKey,
   ].join(", ");
 
+export const getPrimaryKeyColumns = (table: Table) => {
+  const columnsPartStart = table.primaryKey.indexOf("(") + 1;
+  const columns: string[] = [];
+  const cols = table.primaryKey
+    .slice(columnsPartStart, table.primaryKey.length - 1)
+    .split(",");
+  cols.forEach((c) => columns.push(c.trim()));
+  return columns;
+};
+
 export const selectMasterdataRowsEditedByInterval = async (
   client: MariaDbClient,
   table: Table,
@@ -116,6 +126,28 @@ export const selectMasterdataRowsEditedByInterval = async (
     const response: any = await client.getDatabasePool().query(cmd);
     const rows: Row_Masterdata[] = [];
     response.forEach((r: Row_Masterdata) => rows.push(r));
+    return { result: { cmd, rows } };
+  } catch (error) {
+    return { error: error.toString() };
+  }
+};
+
+export const selectPage = async <T extends Partial<Record<string, unknown>>>(
+  table: Table,
+  page: number,
+  pageSize: number,
+  client: MariaDbClient
+): Promise<SelectResponse<T>> => {
+  try {
+    const orderByClause = `ORDER BY ${getPrimaryKeyColumns(table)
+      .map((c) => `${c} ASC`)
+      .join(", ")}`;
+    const cmd = `SELECT * FROM ${
+      table.id
+    } ${orderByClause} LIMIT ${pageSize} OFFSET ${page * pageSize}`;
+    const queryResult = await client.getDatabasePool().query(cmd);
+    const rows: T[] = [];
+    queryResult.forEach((r: T) => rows.push(r));
     return { result: { cmd, rows } };
   } catch (error) {
     return { error: error.toString() };

@@ -13,6 +13,7 @@ import {
   getQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
 } from "../../json-schema/parameters.mjs";
+import { TableImageContent } from "../../persistence/maria-db/tables/ImageContent.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";
@@ -287,6 +288,66 @@ allServices.push({
             res,
             BadRequestMissingParameterCode,
             `This url needs query a parameter "image_id".`
+          );
+        }
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
+
+allServices.push({
+  url: "/image-content/page/select",
+  method: "GET",
+  neededRole: "external",
+  parameters: getQueryParametersSchema(
+    ["page", "integer", true, "The n-th part of all data. The first is 0."],
+    ["page_size", "integer", true, "The count of rows for each part(page)."]
+  ),
+  name: "Select paginated image content rows.",
+  handler: [
+    async (req, res) => {
+      try {
+        const { page = undefined, page_size = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        const pageNumber = page ? Number.parseInt(page) : undefined;
+        const pageSizeNumber = page_size
+          ? Number.parseInt(page_size)
+          : undefined;
+        if (
+          typeof pageNumber === "number" &&
+          typeof pageSizeNumber === "number"
+        ) {
+          withDefaultPersistence(res, async (persistence) => {
+            const response =
+              await persistence.tables.pagination.selectPage<Row_ImageContent>(
+                TableImageContent,
+                pageNumber,
+                pageSizeNumber
+              );
+            const { result, error, errorCode, errorDetails } = response || {};
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                result,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
+            }
+            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+              response: { result },
+            };
+            return res.send(apiResponse);
+          });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs query parameters: ...?page=<index of the requested page>&page_size=<count of rows for each page>"
           );
         }
       } catch (error) {

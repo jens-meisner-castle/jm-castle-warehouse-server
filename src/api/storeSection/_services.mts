@@ -6,8 +6,10 @@ import {
 } from "jm-castle-warehouse-types/build";
 import {
   getOptionalSingleQueryParametersSchema,
+  getQueryParametersSchema,
   getStrictSingleQueryParametersSchema,
 } from "../../json-schema/parameters.mjs";
+import { TableStoreSection } from "../../persistence/maria-db/tables/StoreSection.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { addJokerToFilterValue } from "../../utils/Sql.mjs";
@@ -168,6 +170,66 @@ allServices.push({
           };
           return res.send(apiResponse);
         });
+      } catch (error) {
+        return handleError(res, UnknownErrorCode, error.toString());
+      }
+    },
+  ],
+});
+
+allServices.push({
+  url: "/store-section/page/select",
+  method: "GET",
+  neededRole: "external",
+  parameters: getQueryParametersSchema(
+    ["page", "integer", true, "The n-th part of all data. The first is 0."],
+    ["page_size", "integer", true, "The count of rows for each part(page)."]
+  ),
+  name: "Select paginated store sections.",
+  handler: [
+    async (req, res) => {
+      try {
+        const { page = undefined, page_size = undefined } =
+          typeof req.query === "object" ? req.query : {};
+        const pageNumber = page ? Number.parseInt(page) : undefined;
+        const pageSizeNumber = page_size
+          ? Number.parseInt(page_size)
+          : undefined;
+        if (
+          typeof pageNumber === "number" &&
+          typeof pageSizeNumber === "number"
+        ) {
+          withDefaultPersistence(res, async (persistence) => {
+            const response =
+              await persistence.tables.pagination.selectPage<Row_StoreSection>(
+                TableStoreSection,
+                pageNumber,
+                pageSizeNumber
+              );
+            const { result, error, errorCode, errorDetails } = response || {};
+            if (
+              handleErrorOrUndefinedResult(
+                res,
+                result,
+                errorCode || "-1",
+                error,
+                errorDetails
+              )
+            ) {
+              return;
+            }
+            const apiResponse: ApiServiceResponse<{ result: typeof result }> = {
+              response: { result },
+            };
+            return res.send(apiResponse);
+          });
+        } else {
+          return handleError(
+            res,
+            BadRequestMissingParameterCode,
+            "This url needs query parameters: ...?page=<index of the requested page>&page_size=<count of rows for each page>"
+          );
+        }
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
       }

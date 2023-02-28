@@ -117,6 +117,7 @@ import {
 import {
   countOfRowsForTables,
   selectMasterdataRowsEditedByInterval,
+  selectPage,
 } from "./Table.mjs";
 import { TableArticle } from "./tables/Article.mjs";
 import { TableAttribute } from "./tables/Attribute.mjs";
@@ -262,6 +263,13 @@ export class MariaDbClient implements Persistence {
     stats: {
       countOfRowsForTables: (...tables: Table[]) =>
         countOfRowsForTables(this, ...tables),
+    },
+    pagination: {
+      selectPage: <T extends Partial<Record<string, unknown>>>(
+        table: Table,
+        page: number,
+        pageSize: number
+      ) => selectPage<T>(table, page, pageSize, this),
     },
     masterdata: {
       selectEditedAtFromTo: (

@@ -52,6 +52,13 @@ export interface Persistence {
         ...tables: Table[]
       ) => Promise<FindResponse<{ table: string; countOfRows: number }>[]>;
     };
+    pagination: {
+      selectPage: <T extends Partial<Row_Masterdata>>(
+        table: Table,
+        page: number,
+        pageSize: number
+      ) => Promise<SelectResponse<T>>;
+    };
     masterdata: {
       selectEditedAtFromTo: (
         source: keyof typeof MasterdataTables,

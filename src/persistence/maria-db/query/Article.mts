@@ -96,7 +96,7 @@ export const selectByKey = async (
 };
 
 export const select = async (
-  filter: Filter_NameLike & Partial<Filter_Hashtag>,
+  filter: Partial<Filter_NameLike> & Partial<Filter_Hashtag>,
   client: MariaDbClient
 ): Promise<SelectResponse<Row>> => {
   try {
@@ -104,9 +104,15 @@ export const select = async (
     const hashtagClause = hashtag
       ? hashtag.map((s) => `hashtags LIKE '%"${s}"%'`).join(" OR ")
       : undefined;
-    const cmd = hashtagClause
-      ? `SELECT * FROM ${table.id} WHERE name LIKE '${name}' AND (${hashtagClause})`
-      : `SELECT * FROM ${table.id} WHERE name LIKE '${name}'`;
+    const nameClause = name ? `name LIKE ${name}` : undefined;
+    const cmd =
+      hashtagClause && nameClause
+        ? `SELECT * FROM ${table.id} WHERE name LIKE '${name}' AND (${hashtagClause})`
+        : hashtagClause
+        ? `SELECT * FROM ${table.id} WHERE (${hashtagClause})`
+        : nameClause
+        ? `SELECT * FROM ${table.id} WHERE name LIKE '${name}'`
+        : `SELECT * FROM ${table.id}`;
     const queryResult = await client.getDatabasePool().query(cmd);
     const rows: Row[] = [];
     queryResult.forEach((r: Row) => rows.push(r));
