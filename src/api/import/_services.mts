@@ -17,7 +17,7 @@ interface ImportResult {
 }
 
 allServices.push({
-  url: "/import/db/file",
+  url: "/import/system/file",
   method: "POST",
   neededRole: "admin",
   name: "Import a castle-warehouse export file.",

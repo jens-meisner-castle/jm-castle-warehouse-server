@@ -1,6 +1,6 @@
 {
   "name": "jm-castle-warehouse-server",
-  "version": "0.9.8",
+  "version": "1.0.0",
   "type": "module",
   "module": "./build",
   "files": [
@@ -19,7 +19,8 @@
   },
   "private": false,
   "scripts": {
-    "prebuild": "eslint \"./src/**\"",
+    "clean": "del-cli build",
+    "prebuild": "npm run clean && eslint \"./src/**\"",
     "build": "tsc --project tsconfig.json",
     "start": "node ./build/start.mjs",
     "dev": "nodemon --ext '*.mts' -x \"npm run build && npm run start \"",
@@ -50,7 +51,6 @@
     "@types/archiver": "^5.3.1",
     "@types/cookie-parser": "^1.4.3",
     "@types/cors": "^2.8.12",
-    "@types/dotenv": "^8.2.0",
     "@types/express": "4.17.13",
     "@types/http-errors": "1.8.2",
     "@types/jsonwebtoken": "^8.5.9",
@@ -60,6 +60,7 @@
     "@types/sharp": "^0.31.0",
     "@typescript-eslint/eslint-plugin": "^5.37.0",
     "cross-env": "^7.0.3",
+    "del-cli": "^5.0.0",
     "eslint": "^8.23.1",
     "jm-castle-types": "^0.1.1",
     "jm-castle-warehouse-types": "^0.14.6",
