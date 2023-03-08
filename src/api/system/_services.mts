@@ -41,7 +41,11 @@ allServices.push({
                 ...tableObjects
               );
             const apiResponse: ApiServiceResponse<
-              FindResponse<{ table: string; countOfRows: number }>[]
+              FindResponse<{
+                table: string;
+                countOfRows: number;
+                lastChangeAt: number | undefined;
+              }>[]
             > = {
               response,
             };

@@ -6,7 +6,12 @@ import {
   readJsonFile,
 } from "./configuration/Configuration.mjs";
 import { newExpressApp } from "./express-app.mjs";
-import { CastleWarehouse, setCurrentSystem } from "./system/status/System.mjs";
+import { PubSubWebsocketServer } from "./pub-sub/PubSubWebsocketServer.mjs";
+import {
+  CastleWarehouse,
+  getCurrentSystem,
+  setCurrentSystem,
+} from "./system/status/System.mjs";
 
 const onListening = () => {
   const addr = server.address();
@@ -57,6 +62,8 @@ const server = createServer(
   },
   app
 );
+
+new PubSubWebsocketServer(server, getCurrentSystem);
 
 server.on("error", onError);
 server.on("listening", onListening);

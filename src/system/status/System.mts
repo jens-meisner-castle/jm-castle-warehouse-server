@@ -29,7 +29,10 @@ import { ImageFileStore } from "../../image-store/ImageFileStore.mjs";
 import { getMailSender } from "../../mail/Mail.mjs";
 import { MailSender } from "../../mail/Types.mjs";
 import { getPersistence } from "../../persistence/Persistence.mjs";
-import { Persistence } from "../../persistence/Types.mjs";
+import {
+  Persistence,
+  TableRowsChangeConsumer,
+} from "../../persistence/Types.mjs";
 import { ArticleStock } from "../../stock/ArticleStock.mjs";
 import { getDateFormat } from "../../utils/Format.mjs";
 
@@ -69,6 +72,18 @@ export class CastleWarehouse {
   private caCert: Buffer | null | undefined = undefined;
   private serverCert: Buffer;
   private serverKey: Buffer;
+
+  public addTableRowsChangeConsumer = (consumer: TableRowsChangeConsumer) => {
+    this.defaultPersistence &&
+      this.defaultPersistence.addTableRowsChangeConsumer(consumer);
+  };
+
+  public removeTableRowsChangeConsumer = (
+    consumer: TableRowsChangeConsumer
+  ) => {
+    this.defaultPersistence &&
+      this.defaultPersistence.removeTableRowsChangeConsumer(consumer);
+  };
 
   public api = {
     insertArticle: async (row: Row_Article) => {

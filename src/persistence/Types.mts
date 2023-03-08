@@ -38,6 +38,10 @@ export const AggregationFunctions = {
   sum: { sql: "SUM" },
 };
 
+export interface TableRowsChangeConsumer {
+  onTableRowsChange: (changes: { table: string }[]) => void;
+}
+
 export type AggreagtionFunction = keyof typeof AggregationFunctions;
 export interface Persistence {
   type: () => string;
@@ -46,11 +50,17 @@ export interface Persistence {
     | { tables: DbExportData["tables"]; error?: never; errorCode?: never }
     | { tables?: never; error: string; errorCode: ErrorCode }
   >;
+  addTableRowsChangeConsumer: (consumer: TableRowsChangeConsumer) => void;
+  removeTableRowsChangeConsumer: (consumer: TableRowsChangeConsumer) => void;
   tables: {
     stats: {
-      countOfRowsForTables: (
-        ...tables: Table[]
-      ) => Promise<FindResponse<{ table: string; countOfRows: number }>[]>;
+      countOfRowsForTables: (...tables: Table[]) => Promise<
+        FindResponse<{
+          table: string;
+          countOfRows: number;
+          lastChangeAt: number | undefined;
+        }>[]
+      >;
     };
     pagination: {
       selectPage: <T extends Partial<Row_Masterdata>>(

@@ -5,6 +5,7 @@ import {
   SelectResponse,
   UpdateResponse,
 } from "jm-castle-warehouse-types";
+import { DateTime } from "luxon";
 import { without } from "../../../utils/Basic.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
 import { TableStore } from "../tables/Store.mjs";
@@ -20,6 +21,10 @@ export const insert = async (
     const cmd = `INSERT INTO ${table.id} SET${valuesClause(values)}`;
     const response: any = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
+    client.changedTableStats("costunit", {
+      countOfRows: undefined,
+      lastChangeAt: DateTime.now().toSeconds(),
+    });
     return { result: { cmd, affectedRows, data: values } };
   } catch (error) {
     return { error: error.toString() };
@@ -40,6 +45,9 @@ export const update = async (
     const response: any = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
     if (affectedRows === 1) {
+      client.changedTableStats("costunit", {
+        lastChangeAt: DateTime.now().toSeconds(),
+      });
       return {
         result: { cmd, affectedRows, data: { ...values, ...valuesToUpdate } },
       };

@@ -86,11 +86,45 @@ export const countOfRowsForTable = async (
 export const countOfRowsForTables = async (
   client: MariaDbClient,
   ...tables: Table[]
-): Promise<FindResponse<{ table: string; countOfRows: number }>[]> => {
+): Promise<
+  FindResponse<{
+    table: string;
+    countOfRows: number;
+    lastChangeAt: number | undefined;
+  }>[]
+> => {
   try {
-    return await Promise.all(
-      tables.map((table) => countOfRowsForTable(client, table))
-    );
+    const counts: FindResponse<{ table: string; countOfRows: number }>[] =
+      await Promise.all(
+        tables.map((table) => {
+          const { countOfRows } = client.getTableStats(table.id) || {};
+          return typeof countOfRows === "number"
+            ? Promise.resolve({
+                result: {
+                  cmd: "cached",
+                  row: { countOfRows, table: table.id },
+                },
+              })
+            : countOfRowsForTable(client, table);
+        })
+      );
+    return counts.map((c) => {
+      const { cmd, row } = c.result || {};
+      const { table, countOfRows } = row || {};
+      table &&
+        typeof countOfRows === "number" &&
+        client.countOfRowsForTable(table, countOfRows);
+      const resultRow =
+        table && typeof countOfRows === "number"
+          ? {
+              table: table,
+              countOfRows: countOfRows,
+              lastChangeAt: client.getTableStats(c.result.row.table)
+                ?.lastChangeAt,
+            }
+          : undefined;
+      return { result: { cmd, row: resultRow } };
+    });
   } catch (error) {
     return [{ error: error.toString() }];
   }
@@ -139,9 +173,14 @@ export const selectPage = async <T extends Partial<Record<string, unknown>>>(
   client: MariaDbClient
 ): Promise<SelectResponse<T>> => {
   try {
-    const orderByClause = `ORDER BY ${getPrimaryKeyColumns(table)
-      .map((c) => `${c} ASC`)
-      .join(", ")}`;
+    const { preferredOrderBy } = table;
+    const orderByClause = preferredOrderBy?.length
+      ? `ORDER BY ${preferredOrderBy
+          .map((ord) => `${ord.column} ${ord.direction}`)
+          .join(", ")}`
+      : `ORDER BY ${getPrimaryKeyColumns(table)
+          .map((c) => `${c} ASC`)
+          .join(", ")}`;
     const cmd = `SELECT * FROM ${
       table.id
     } ${orderByClause} LIMIT ${pageSize} OFFSET ${page * pageSize}`;

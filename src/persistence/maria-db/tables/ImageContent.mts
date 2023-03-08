@@ -12,4 +12,5 @@ export const TableImageContent: Table = {
     ...masterdataTableColumns(),
   ],
   primaryKey: "PRIMARY KEY(image_id)",
+  preferredOrderBy: [{ column: "edited_at", direction: "DESC" }],
 };

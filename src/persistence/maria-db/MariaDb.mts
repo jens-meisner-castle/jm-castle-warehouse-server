@@ -21,7 +21,11 @@ import {
 } from "jm-castle-warehouse-types";
 import { createPool, Pool } from "mariadb";
 import { ErrorWithCode } from "../../utils/Basic.mjs";
-import { AggreagtionFunction, Persistence } from "../Types.mjs";
+import {
+  AggreagtionFunction,
+  Persistence,
+  TableRowsChangeConsumer,
+} from "../Types.mjs";
 import {
   all as allFromArticle,
   insert as insertArticle,
@@ -175,6 +179,11 @@ export class MariaDbClient implements Persistence {
   public version = "1.2.0";
   private setupPool: Pool | undefined;
   private databasePool: Pool | undefined;
+  private tableStats: Record<
+    string,
+    { countOfRows?: number; lastChangeAt?: number }
+  > = {};
+  private tableRowsChangeConsumers: TableRowsChangeConsumer[] = [];
   private spec: MariaDatabaseSpec;
   private handlePoolError = (error: Error) =>
     console.error("Received error from database pool: " + error.toString());
@@ -210,6 +219,36 @@ export class MariaDbClient implements Persistence {
       });
     }
     return this.setupPool;
+  };
+
+  public getTableStats = (tableId: string) => this.tableStats[tableId];
+
+  public addTableRowsChangeConsumer = (consumer: TableRowsChangeConsumer) => {
+    this.tableRowsChangeConsumers.push(consumer);
+  };
+
+  public removeTableRowsChangeConsumer = (
+    consumer: TableRowsChangeConsumer
+  ) => {
+    this.tableRowsChangeConsumers = this.tableRowsChangeConsumers.filter(
+      (c) => c !== consumer
+    );
+  };
+
+  public changedTableStats = (
+    tableId: string,
+    updates: { countOfRows?: number; lastChangeAt?: number }
+  ) => {
+    const previousStats = this.tableStats[tableId] || {};
+    this.tableStats[tableId] = { ...previousStats, ...updates };
+    this.tableRowsChangeConsumers.forEach((consumer) =>
+      consumer.onTableRowsChange([{ table: tableId }])
+    );
+  };
+
+  public countOfRowsForTable = (tableId: string, countOfRows: number) => {
+    const previousStats = this.tableStats[tableId] || {};
+    this.tableStats[tableId] = { ...previousStats, countOfRows };
   };
 
   private exportSingleTableData = async function <T>(access: {

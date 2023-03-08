@@ -1,6 +1,6 @@
 {
   "name": "jm-castle-warehouse-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "module": "./build",
   "files": [
@@ -45,7 +45,8 @@
     "node-fetch": "^3.2.10",
     "node-stream-zip": "^1.15.0",
     "nodemailer": "^6.8.0",
-    "sharp": "^0.31.2"
+    "sharp": "^0.31.2",
+    "ws": "^8.12.1"
   },
   "devDependencies": {
     "@types/archiver": "^5.3.1",
@@ -58,12 +59,13 @@
     "@types/multiparty": "^0.0.33",
     "@types/nodemailer": "^6.4.6",
     "@types/sharp": "^0.31.0",
+    "@types/ws": "^8.5.4",
     "@typescript-eslint/eslint-plugin": "^5.37.0",
     "cross-env": "^7.0.3",
     "del-cli": "^5.0.0",
     "eslint": "^8.23.1",
-    "jm-castle-types": "^0.1.1",
-    "jm-castle-warehouse-types": "^0.14.6",
+    "jm-castle-types": "^0.1.2",
+    "jm-castle-warehouse-types": "^0.14.9",
     "nodemon": "^2.0.19",
     "prettier": "^2.7.1",
     "ts-node": "^10.9.1",
