@@ -26,7 +26,7 @@ export const insert = async (
     const cmd = `INSERT INTO ${table.id} SET${valuesClause(values)}`;
     const response = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
-    client.changedTableStats("costunit", {
+    client.changedTableStats("image_content", {
       countOfRows: undefined,
       lastChangeAt: DateTime.now().toSeconds(),
     });
@@ -50,7 +50,7 @@ export const update = async (
     const response: any = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
     if (affectedRows === 1) {
-      client.changedTableStats("costunit", {
+      client.changedTableStats("image_content", {
         lastChangeAt: DateTime.now().toSeconds(),
       });
       return {

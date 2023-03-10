@@ -299,7 +299,10 @@ export class CastleWarehouse {
 
   public getImageStorePath = () => this.validConfig.imageStore.path;
 
-  public getTempFilePath = () => "c:/development/_temp";
+  public getTempFilePath = () => this.validConfig.tempStore.path;
+
+  public getSystemBackupStorePath = () =>
+    this.validConfig.systemBackupStore?.path;
 
   public getOwnApiUrl = () => {
     const { host, port } = this.validConfig.system;
@@ -571,6 +574,50 @@ export class CastleWarehouse {
     return true;
   };
 
+  private checkSystemBackupStoreSpec = (
+    spec: FilesystemStoreSpec,
+    validConfig: Configuration,
+    errors: string[]
+  ): boolean => {
+    const { type, path } = spec;
+    if (type !== "file-system") {
+      errors.push(
+        `Bad tempStore spec: Currently is only "file-system" as type possible. Found type "${type}".`
+      );
+      return false;
+    }
+    if (typeof path !== "string") {
+      errors.push(
+        `Bad tempStore spec: The property "path" must be a string, but is ${typeof path}.`
+      );
+      return false;
+    }
+    validConfig.systemBackupStore = spec;
+    return true;
+  };
+
+  private checkTempStoreSpec = (
+    spec: FilesystemStoreSpec,
+    validConfig: Configuration,
+    errors: string[]
+  ): boolean => {
+    const { type, path } = spec;
+    if (type !== "file-system") {
+      errors.push(
+        `Bad tempStore spec: Currently is only "file-system" as type possible. Found type "${type}".`
+      );
+      return false;
+    }
+    if (typeof path !== "string") {
+      errors.push(
+        `Bad tempStore spec: The property "path" must be a string, but is ${typeof path}.`
+      );
+      return false;
+    }
+    validConfig.tempStore = spec;
+    return true;
+  };
+
   private checkPersistenceSpec = (
     key: string,
     spec: PersistenceSpec,
@@ -663,8 +710,16 @@ export class CastleWarehouse {
     configuration: Configuration
   ): { validConfig: CheckedConfiguration; errors: string[] | undefined } => {
     try {
-      const { persistence, mail, system, imageStore, user, client } =
-        configuration;
+      const {
+        persistence,
+        mail,
+        system,
+        imageStore,
+        tempStore,
+        systemBackupStore,
+        user,
+        client,
+      } = configuration;
       const validConfig: CheckedConfiguration = {
         isValid: true,
         system: {
@@ -684,12 +739,19 @@ export class CastleWarehouse {
           maxWidth: 400,
           maxHeight: 400,
         },
+        tempStore: {
+          type: "file-system",
+          path: "c:/temp",
+        },
       };
       const errors: string[] = [];
       system && this.checkSystemSpec(system, validConfig, errors);
       user && this.checkUserSpec(user, validConfig, errors);
       client && this.checkClientSpec(client, validConfig, errors);
       imageStore && this.checkImageStoreSpec(imageStore, validConfig, errors);
+      tempStore && this.checkTempStoreSpec(tempStore, validConfig, errors);
+      systemBackupStore &&
+        this.checkSystemBackupStoreSpec(systemBackupStore, validConfig, errors);
       persistence &&
         Object.keys(persistence).forEach((k) => {
           const persistenceSpec = persistence[k];
@@ -732,6 +794,10 @@ export class CastleWarehouse {
             path: "none",
             maxWidth: 400,
             maxHeight: 400,
+          },
+          tempStore: {
+            type: "file-system",
+            path: "c:/temp",
           },
         },
         errors: [error.toString()],

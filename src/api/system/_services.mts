@@ -115,6 +115,7 @@ allServices.push({
     },
   ],
 });
+
 allServices.push({
   url: "/system/setup",
   method: "GET",
@@ -136,6 +137,7 @@ allServices.push({
     },
   ],
 });
+
 allServices.push({
   url: "/system/control/restart",
   method: "GET",
