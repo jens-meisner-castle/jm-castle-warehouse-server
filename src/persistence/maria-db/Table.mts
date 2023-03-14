@@ -1,9 +1,8 @@
+import { SelectResponse, Table } from "jm-castle-types";
 import {
   ColumnStatus,
   FindResponse,
   Row_Masterdata,
-  SelectResponse,
-  Table,
 } from "jm-castle-warehouse-types";
 import { MariaDbClient } from "./MariaDb.mjs";
 import { Filter_At_FromTo_Seconds } from "./query/QueryUtils.mjs";

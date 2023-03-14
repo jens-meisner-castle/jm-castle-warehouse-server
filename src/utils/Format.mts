@@ -1,4 +1,4 @@
-import { LuxonKey } from "jm-castle-warehouse-types";
+import { LuxonKey } from "jm-castle-types";
 
 export const getDateFormat = (level: LuxonKey): string => {
   switch (level) {

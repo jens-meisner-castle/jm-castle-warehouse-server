@@ -1,11 +1,13 @@
 import {
   FindResponse,
   InsertResponse,
+  SelectResponse,
+  UpdateResponse,
+} from "jm-castle-types";
+import {
   PersistentRow,
   Row_Article as Row,
-  SelectResponse,
   SqlDataErrorCode,
-  UpdateResponse,
 } from "jm-castle-warehouse-types";
 import { DateTime } from "luxon";
 import { SqlError } from "mariadb";

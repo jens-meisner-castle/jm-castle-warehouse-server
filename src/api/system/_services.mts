@@ -1,3 +1,4 @@
+import { executeSetup } from "jm-castle-mariadb";
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
@@ -6,8 +7,10 @@ import {
   Table,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types/build";
-import { AllTables } from "../../persistence/maria-db/MariaDb.mjs";
-import { executeSetup } from "../../system/setup/ExecuteSetup.mjs";
+import {
+  AllTables,
+  MariaDbClient,
+} from "../../persistence/maria-db/MariaDb.mjs";
 import { getSystemSetupStatus } from "../../system/setup/Status.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { ApiService } from "../Types.mjs";
@@ -125,7 +128,17 @@ allServices.push({
     async (req, res) => {
       try {
         withDefaultPersistence(res, async (persistence) => {
-          const setup = await executeSetup(persistence);
+          if (persistence.type() !== "maria-db") {
+            throw new Error(
+              "Currently is only mariadb as default persistentce possible."
+            );
+          }
+          const mariaClient = persistence as MariaDbClient;
+          const setup = await executeSetup(
+            mariaClient,
+            mariaClient.getDatabaseName(),
+            AllTables
+          );
           const apiResponse: ApiServiceResponse<typeof setup> = {
             response: setup,
           };

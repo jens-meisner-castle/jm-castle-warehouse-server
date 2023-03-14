@@ -1,3 +1,5 @@
+import { MariaInterface } from "jm-castle-mariadb";
+import { SelectResponse, Table } from "jm-castle-types";
 import {
   DbExportData,
   ErrorCode,
@@ -15,8 +17,6 @@ import {
   Row_Receiver,
   Row_Store,
   Row_StoreSection,
-  SelectResponse,
-  Table,
   UnknownErrorCode,
 } from "jm-castle-warehouse-types";
 import { createPool, Pool } from "mariadb";
@@ -170,7 +170,7 @@ export interface MariaDbClientProps {
   spec: MariaDatabaseSpec;
 }
 
-export class MariaDbClient implements Persistence {
+export class MariaDbClient implements Persistence, MariaInterface {
   constructor(props: MariaDbClientProps) {
     const { spec } = props;
     this.spec = spec;

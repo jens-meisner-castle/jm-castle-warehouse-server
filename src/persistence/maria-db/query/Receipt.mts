@@ -1,9 +1,5 @@
-import {
-  InsertResponse,
-  PersistentRow,
-  Row_Receipt as Row,
-  SelectResponse,
-} from "jm-castle-warehouse-types";
+import { InsertResponse, SelectResponse } from "jm-castle-types";
+import { PersistentRow, Row_Receipt as Row } from "jm-castle-warehouse-types";
 import { PoolConnection } from "mariadb";
 import { without } from "../../../utils/Basic.mjs";
 import { AggreagtionFunction, AggregationFunctions } from "../../Types.mjs";

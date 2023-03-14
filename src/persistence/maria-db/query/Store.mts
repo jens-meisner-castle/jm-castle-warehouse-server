@@ -1,10 +1,9 @@
 import {
   InsertResponse,
-  PersistentRow,
-  Row_Store as Row,
   SelectResponse,
   UpdateResponse,
-} from "jm-castle-warehouse-types";
+} from "jm-castle-types";
+import { PersistentRow, Row_Store as Row } from "jm-castle-warehouse-types";
 import { DateTime } from "luxon";
 import { without } from "../../../utils/Basic.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";

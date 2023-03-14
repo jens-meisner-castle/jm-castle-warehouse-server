@@ -1,13 +1,13 @@
-import { WebSocket } from "ws";
-import { TableRowsChangeConsumer } from "../persistence/Types.mjs";
-import { CastleWarehouse } from "../system/status/System.mjs";
 import {
   isWsMessage,
   msg_pong,
   msg_publish,
   msg_welcome,
   WsMessage,
-} from "./WsMessage.mjs";
+} from "jm-castle-types";
+import { WebSocket } from "ws";
+import { TableRowsChangeConsumer } from "../persistence/Types.mjs";
+import { CastleWarehouse } from "../system/status/System.mjs";
 
 let counter = 0;
 
