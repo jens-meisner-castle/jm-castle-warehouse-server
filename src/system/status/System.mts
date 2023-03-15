@@ -1,4 +1,5 @@
 import fs from "fs";
+import { getDateFormat } from "jm-castle-types";
 import {
   CheckedConfiguration,
   Configuration,
@@ -34,7 +35,6 @@ import {
   TableRowsChangeConsumer,
 } from "../../persistence/Types.mjs";
 import { ArticleStock } from "../../stock/ArticleStock.mjs";
-import { getDateFormat } from "../../utils/Format.mjs";
 
 let CurrentSystem: CastleWarehouse | undefined = undefined;
 

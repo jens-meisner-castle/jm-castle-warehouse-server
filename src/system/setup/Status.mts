@@ -1,8 +1,5 @@
-import {
-  SystemSetupStatus,
-  Table,
-  TableStatus,
-} from "jm-castle-warehouse-types";
+import { Table, TableStatus } from "jm-castle-types";
+import { SystemSetupStatus } from "jm-castle-types";
 import {
   AllTables,
   MariaDbClient,
