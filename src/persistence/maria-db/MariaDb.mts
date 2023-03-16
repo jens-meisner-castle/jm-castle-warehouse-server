@@ -9,11 +9,13 @@ import {
   Row_Attribute,
   Row_Costunit,
   Row_Emission,
+  Row_EmissionRequest,
   Row_Hashtag,
   Row_ImageContent,
   Row_ImageReference,
   Row_Manufacturer,
   Row_Receipt,
+  Row_ReceiptRequest,
   Row_Receiver,
   Row_Store,
   Row_StoreSection,
@@ -265,7 +267,19 @@ export class MariaDbClient implements Persistence, MariaInterface {
     { tables: DbExportData["tables"] } | { error: string; errorCode: ErrorCode }
   > => {
     try {
+      const attribute = await this.exportSingleTableData(this.tables.attribute);
       const hashtag = await this.exportSingleTableData(this.tables.hashtag);
+      const manufacturer = await this.exportSingleTableData(
+        this.tables.manufacturer
+      );
+      const costunit = await this.exportSingleTableData(this.tables.costunit);
+      const receiver = await this.exportSingleTableData(this.tables.receiver);
+      const imageReference = await this.exportSingleTableData(
+        this.tables.imageReference
+      );
+      const imageContent = await this.exportSingleTableData(
+        this.tables.imageContent
+      );
       const article = await this.exportSingleTableData(this.tables.article);
       const store = await this.exportSingleTableData(this.tables.store);
       const storeSection = await this.exportSingleTableData(
@@ -273,21 +287,24 @@ export class MariaDbClient implements Persistence, MariaInterface {
       );
       const receipt = await this.exportSingleTableData(this.tables.receipt);
       const emission = await this.exportSingleTableData(this.tables.emission);
-      const imageReference = await this.exportSingleTableData(
-        this.tables.imageReference
-      );
-      const imageContent = await this.exportSingleTableData(
-        this.tables.imageContent
-      );
+      const receiptRequest: { rows: Row_ReceiptRequest[] } = { rows: [] }; // await this.exportSingleTableData(this.tables.receipt);
+      const emissionRequest: { rows: Row_EmissionRequest[] } = { rows: [] }; // await this.exportSingleTableData(this.tables.emission);
+
       const tables: DbExportData["tables"] = {
+        attribute,
         hashtag,
+        manufacturer,
+        costunit,
+        receiver,
+        imageReference,
+        imageContent,
         article,
         store,
         storeSection,
         receipt,
         emission,
-        imageReference,
-        imageContent,
+        receiptRequest,
+        emissionRequest,
       };
       return { tables };
     } catch (error: unknown) {
