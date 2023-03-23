@@ -1,9 +1,9 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
-  Row_Attribute,
   UnknownErrorCode,
-} from "jm-castle-warehouse-types/build";
+} from "jm-castle-types";
+import { Row_Attribute } from "jm-castle-warehouse-types";
 import {
   getOptionalSingleQueryParametersSchema,
   getQueryParametersSchema,

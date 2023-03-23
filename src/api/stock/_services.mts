@@ -3,7 +3,7 @@ import {
   BadRequestBadParameterCode,
   BadRequestMissingParameterCode,
   UnknownErrorCode,
-} from "jm-castle-warehouse-types";
+} from "jm-castle-types";
 import { getStrictSingleQueryParametersSchema } from "../../json-schema/parameters.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { ApiService } from "../Types.mjs";

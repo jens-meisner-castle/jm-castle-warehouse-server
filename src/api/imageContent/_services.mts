@@ -3,10 +3,10 @@ import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
   InsertResponse,
-  Row_ImageContent,
   UnknownErrorCode,
   UpdateResponse,
-} from "jm-castle-warehouse-types/build";
+} from "jm-castle-types";
+import { Row_ImageContent } from "jm-castle-warehouse-types";
 import multiparty from "multiparty";
 import stream from "stream";
 import {

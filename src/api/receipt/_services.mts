@@ -1,9 +1,9 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
-  Row_Receipt,
   UnknownErrorCode,
-} from "jm-castle-warehouse-types";
+} from "jm-castle-types";
+import { Row_Receipt } from "jm-castle-warehouse-types";
 import { getQueryParametersSchema } from "../../json-schema/parameters.mjs";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { ApiService } from "../Types.mjs";

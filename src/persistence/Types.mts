@@ -8,6 +8,7 @@ import {
 } from "jm-castle-types";
 import {
   DbExportData,
+  DbImportData,
   ErrorCode,
   Row_Article,
   Row_Attribute,
@@ -44,13 +45,33 @@ export interface TableRowsChangeConsumer {
   onTableRowsChange: (changes: { table: string }[]) => void;
 }
 
-export type AggreagtionFunction = keyof typeof AggregationFunctions;
+export interface MasterdataUpdateOptions {
+  noCheckDatasetVersion?: boolean;
+  noIncreaseDatasetVersion?: boolean;
+  noTableStatsUpdate?: boolean;
+}
+
+export interface MasterdataInsertOptions {
+  noTableStatsUpdate?: boolean;
+}
+
+export interface StockdataInsertOptions {
+  noDatasetIdNeeded?: boolean;
+}
+
+export type AggregationFunction = keyof typeof AggregationFunctions;
 export interface Persistence {
   type: () => string;
   version: string;
   exportTableData: () => Promise<
     | { tables: DbExportData["tables"]; error?: never; errorCode?: never }
     | { tables?: never; error: string; errorCode: ErrorCode }
+  >;
+  importTableData: (
+    tables: DbExportData["tables"]
+  ) => Promise<
+    | (DbImportData & { error?: never; errorCode?: never })
+    | { error: string; errorCode: ErrorCode; tables?: never }
   >;
   addTableRowsChangeConsumer: (consumer: TableRowsChangeConsumer) => void;
   removeTableRowsChangeConsumer: (consumer: TableRowsChangeConsumer) => void;
@@ -79,10 +100,12 @@ export interface Persistence {
     };
     imageReference: {
       insert: (
-        values: Row_ImageReference
+        values: Row_ImageReference,
+        options?: MasterdataInsertOptions
       ) => Promise<InsertResponse<Row_ImageReference>>;
       update: (
-        values: Row_ImageReference
+        values: Row_ImageReference,
+        options?: MasterdataUpdateOptions
       ) => Promise<UpdateResponse<Row_ImageReference>>;
       updateImageReferences: (
         reference: string,
@@ -100,10 +123,12 @@ export interface Persistence {
     };
     imageContent: {
       insert: (
-        values: Row_ImageContent
+        values: Row_ImageContent,
+        options?: MasterdataInsertOptions
       ) => Promise<InsertResponse<Row_ImageContent>>;
       update: (
-        values: Row_ImageContent
+        values: Row_ImageContent,
+        options?: MasterdataUpdateOptions
       ) => Promise<UpdateResponse<Row_ImageContent>>;
       select: (
         filter: Filter_ImageId | Filter_ImageExtension
@@ -114,18 +139,26 @@ export interface Persistence {
       all: () => Promise<SelectResponse<Row_ImageContent>>;
     };
     store: {
-      insert: (values: Row_Store) => Promise<InsertResponse<Row_Store>>;
-      update: (values: Row_Store) => Promise<UpdateResponse<Row_Store>>;
+      insert: (
+        values: Row_Store,
+        options?: MasterdataInsertOptions
+      ) => Promise<InsertResponse<Row_Store>>;
+      update: (
+        values: Row_Store,
+        options?: MasterdataUpdateOptions
+      ) => Promise<UpdateResponse<Row_Store>>;
       select: (filter: Filter_NameLike) => Promise<SelectResponse<Row_Store>>;
       selectByKey: (storeId: string) => Promise<SelectResponse<Row_Store>>;
       all: () => Promise<SelectResponse<Row_Store>>;
     };
     storeSection: {
       insert: (
-        values: Row_StoreSection
+        values: Row_StoreSection,
+        options?: MasterdataInsertOptions
       ) => Promise<InsertResponse<Row_StoreSection>>;
       update: (
-        values: Row_StoreSection
+        values: Row_StoreSection,
+        options?: MasterdataUpdateOptions
       ) => Promise<UpdateResponse<Row_StoreSection>>;
       select: (
         filter: Filter_NameLike
@@ -136,8 +169,14 @@ export interface Persistence {
       all: () => Promise<SelectResponse<Row_StoreSection>>;
     };
     attribute: {
-      insert: (values: Row_Attribute) => Promise<InsertResponse<Row_Attribute>>;
-      update: (values: Row_Attribute) => Promise<UpdateResponse<Row_Attribute>>;
+      insert: (
+        values: Row_Attribute,
+        options?: MasterdataInsertOptions
+      ) => Promise<InsertResponse<Row_Attribute>>;
+      update: (
+        values: Row_Attribute,
+        options?: MasterdataUpdateOptions
+      ) => Promise<UpdateResponse<Row_Attribute>>;
       select: (
         filter: Filter_NameLike
       ) => Promise<SelectResponse<Row_Attribute>>;
@@ -145,15 +184,27 @@ export interface Persistence {
       all: () => Promise<SelectResponse<Row_Attribute>>;
     };
     hashtag: {
-      insert: (values: Row_Hashtag) => Promise<InsertResponse<Row_Hashtag>>;
-      update: (values: Row_Hashtag) => Promise<UpdateResponse<Row_Hashtag>>;
+      insert: (
+        values: Row_Hashtag,
+        options?: MasterdataInsertOptions
+      ) => Promise<InsertResponse<Row_Hashtag>>;
+      update: (
+        values: Row_Hashtag,
+        options?: MasterdataUpdateOptions
+      ) => Promise<UpdateResponse<Row_Hashtag>>;
       select: (filter: Filter_NameLike) => Promise<SelectResponse<Row_Hashtag>>;
       selectByKey: (tagId: string) => Promise<SelectResponse<Row_Hashtag>>;
       all: () => Promise<SelectResponse<Row_Hashtag>>;
     };
     costunit: {
-      insert: (values: Row_Costunit) => Promise<InsertResponse<Row_Costunit>>;
-      update: (values: Row_Costunit) => Promise<UpdateResponse<Row_Costunit>>;
+      insert: (
+        values: Row_Costunit,
+        options?: MasterdataInsertOptions
+      ) => Promise<InsertResponse<Row_Costunit>>;
+      update: (
+        values: Row_Costunit,
+        options?: MasterdataUpdateOptions
+      ) => Promise<UpdateResponse<Row_Costunit>>;
       select: (
         filter: Filter_NameLike
       ) => Promise<SelectResponse<Row_Costunit>>;
@@ -161,8 +212,14 @@ export interface Persistence {
       all: () => Promise<SelectResponse<Row_Costunit>>;
     };
     receiver: {
-      insert: (values: Row_Receiver) => Promise<InsertResponse<Row_Receiver>>;
-      update: (values: Row_Receiver) => Promise<UpdateResponse<Row_Receiver>>;
+      insert: (
+        values: Row_Receiver,
+        options?: MasterdataInsertOptions
+      ) => Promise<InsertResponse<Row_Receiver>>;
+      update: (
+        values: Row_Receiver,
+        options?: MasterdataUpdateOptions
+      ) => Promise<UpdateResponse<Row_Receiver>>;
       select: (
         filter: Filter_NameLike
       ) => Promise<SelectResponse<Row_Receiver>>;
@@ -173,10 +230,12 @@ export interface Persistence {
     };
     manufacturer: {
       insert: (
-        values: Row_Manufacturer
+        values: Row_Manufacturer,
+        options?: MasterdataInsertOptions
       ) => Promise<InsertResponse<Row_Manufacturer>>;
       update: (
-        values: Row_Manufacturer
+        values: Row_Manufacturer,
+        options?: MasterdataUpdateOptions
       ) => Promise<UpdateResponse<Row_Manufacturer>>;
       select: (
         filter: Filter_NameLike
@@ -187,8 +246,14 @@ export interface Persistence {
       all: () => Promise<SelectResponse<Row_Manufacturer>>;
     };
     article: {
-      insert: (values: Row_Article) => Promise<InsertResponse<Row_Article>>;
-      update: (values: Row_Article) => Promise<UpdateResponse<Row_Article>>;
+      insert: (
+        values: Row_Article,
+        options?: MasterdataInsertOptions
+      ) => Promise<InsertResponse<Row_Article>>;
+      update: (
+        values: Row_Article,
+        options?: MasterdataUpdateOptions
+      ) => Promise<UpdateResponse<Row_Article>>;
       select: (
         filter: Filter_NameLike & Partial<Filter_Hashtag>
       ) => Promise<SelectResponse<Row_Article>>;
@@ -196,7 +261,10 @@ export interface Persistence {
       all: () => Promise<SelectResponse<Row_Article>>;
     };
     receipt: {
-      insert: (values: Row_Receipt) => Promise<InsertResponse<Row_Receipt>>;
+      insert: (
+        values: Row_Receipt,
+        options?: StockdataInsertOptions
+      ) => Promise<InsertResponse<Row_Receipt>>;
       select: (
         filter: Filter_At_FromTo_Seconds
       ) => Promise<SelectResponse<Row_Receipt>>;
@@ -207,19 +275,22 @@ export interface Persistence {
       selectGroupBy: (
         filter: Filter_At_FromTo_Seconds,
         groupBy: Array<keyof Row_Receipt>,
-        aggregate: Array<{ col: keyof Row_Receipt; fn: AggreagtionFunction }>
+        aggregate: Array<{ col: keyof Row_Receipt; fn: AggregationFunction }>
       ) => Promise<SelectResponse<Partial<Row_Receipt>>>;
       all: () => Promise<SelectResponse<Row_Receipt>>;
     };
     emission: {
-      insert: (values: Row_Emission) => Promise<InsertResponse<Row_Emission>>;
+      insert: (
+        values: Row_Emission,
+        options?: StockdataInsertOptions
+      ) => Promise<InsertResponse<Row_Emission>>;
       select: (
         filter: Filter_At_FromTo_Seconds
       ) => Promise<SelectResponse<Row_Emission>>;
       selectGroupBy: (
         filter: Filter_At_FromTo_Seconds,
         groupBy: Array<keyof Row_Emission>,
-        aggregate: Array<{ col: keyof Row_Emission; fn: AggreagtionFunction }>
+        aggregate: Array<{ col: keyof Row_Emission; fn: AggregationFunction }>
       ) => Promise<SelectResponse<Partial<Row_Emission>>>;
       all: () => Promise<SelectResponse<Row_Emission>>;
     };

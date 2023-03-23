@@ -5,7 +5,7 @@ import {
   DevErrorCode,
   ErrorCode,
   getApiStatus,
-} from "jm-castle-warehouse-types";
+} from "jm-castle-types";
 import { Persistence } from "../persistence/Types.mjs";
 import { getCurrentSystem } from "../system/status/System.mjs";
 

@@ -29,12 +29,23 @@ import {
 import { ImageFileStore } from "../../image-store/ImageFileStore.mjs";
 import { getMailSender } from "../../mail/Mail.mjs";
 import { MailSender } from "../../mail/Types.mjs";
+import {
+  AllTables,
+  MariaDbClient,
+} from "../../persistence/maria-db/MariaDb.mjs";
 import { getPersistence } from "../../persistence/Persistence.mjs";
 import {
   Persistence,
   TableRowsChangeConsumer,
 } from "../../persistence/Types.mjs";
 import { ArticleStock } from "../../stock/ArticleStock.mjs";
+
+export interface ExportImportActiveConsumer {
+  onExportImportChange: (state: {
+    exportActive: boolean;
+    importActive: boolean;
+  }) => void;
+}
 
 let CurrentSystem: CastleWarehouse | undefined = undefined;
 
@@ -62,12 +73,18 @@ export class CastleWarehouse {
   private configErrors: string[] | undefined;
   private validConfig: CheckedConfiguration;
 
+  private isExportActive = false;
+  private isImportActive = false;
+  private isSetupActive = false;
+
   private imageStore: ImageFileStore;
   private articleStock: ArticleStock;
   private persistence: Record<string, Persistence> = {};
   private defaultPersistence: Persistence | undefined = undefined;
   private mailSenders: Record<string, MailSender> = {};
   private defaultMailSender: MailSender | undefined = undefined;
+
+  private exportImportActiveConsumers: ExportImportActiveConsumer[] = [];
 
   private caCert: Buffer | null | undefined = undefined;
   private serverCert: Buffer;
@@ -83,6 +100,20 @@ export class CastleWarehouse {
   ) => {
     this.defaultPersistence &&
       this.defaultPersistence.removeTableRowsChangeConsumer(consumer);
+  };
+
+  public addExportImportActiveConsumer = (
+    consumer: ExportImportActiveConsumer
+  ) => {
+    this.exportImportActiveConsumers.push(consumer);
+  };
+
+  public removeExportImportActiveConsumer = (
+    consumer: ExportImportActiveConsumer
+  ) => {
+    this.exportImportActiveConsumers = this.exportImportActiveConsumers.filter(
+      (c) => c !== consumer
+    );
   };
 
   public api = {
@@ -252,6 +283,74 @@ export class CastleWarehouse {
     await this.setupPersistence();
     await this.setupImageStore();
     await this.setupArticleStock();
+  };
+
+  public isImportInProgress = () => this.isImportActive;
+
+  public isExportInProgress = () => this.isExportActive;
+
+  public postImport = async () => {
+    this.isImportActive = false;
+    await this.setupArticleStock();
+    const nowSeconds = DateTime.now().toSeconds();
+    AllTables.forEach((table) =>
+      (this.defaultPersistence as MariaDbClient).changedTableStats(table.id, {
+        countOfRows: undefined,
+        lastChangeAt: nowSeconds,
+      })
+    );
+    this.exportImportActiveConsumers.forEach((c) =>
+      c.onExportImportChange({
+        exportActive: this.isExportActive,
+        importActive: this.isImportActive,
+      })
+    );
+  };
+
+  public preImport = async () => {
+    this.isImportActive = true;
+    this.exportImportActiveConsumers.forEach((c) =>
+      c.onExportImportChange({
+        exportActive: this.isExportActive,
+        importActive: this.isImportActive,
+      })
+    );
+  };
+
+  public postExport = async () => {
+    this.isExportActive = false;
+    this.exportImportActiveConsumers.forEach((c) =>
+      c.onExportImportChange({
+        exportActive: this.isExportActive,
+        importActive: this.isImportActive,
+      })
+    );
+  };
+
+  public preExport = async () => {
+    this.isExportActive = true;
+    this.exportImportActiveConsumers.forEach((c) =>
+      c.onExportImportChange({
+        exportActive: this.isExportActive,
+        importActive: this.isImportActive,
+      })
+    );
+  };
+
+  public postSetup = async () => {
+    this.isSetupActive = false;
+    await this.setupArticleStock();
+    const nowSeconds = DateTime.now().toSeconds();
+    AllTables.forEach((table) =>
+      (this.defaultPersistence as MariaDbClient).changedTableStats(table.id, {
+        countOfRows: undefined,
+        lastChangeAt: nowSeconds,
+      })
+    );
+  };
+
+  public preSetup = async () => {
+    this.isSetupActive = true;
   };
 
   public authenticateClient = (

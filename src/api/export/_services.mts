@@ -1,10 +1,10 @@
 import fs from "fs";
 import {
   ApiServiceResponse,
-  DbExportData,
-  SystemBackupResponse,
+  BadTimeForRequestTryLaterCode,
   UnknownErrorCode,
-} from "jm-castle-warehouse-types/build";
+} from "jm-castle-types";
+import { DbExportData, SystemBackupResponse } from "jm-castle-warehouse-types";
 import { DateTime } from "luxon";
 import { getCurrentSystem } from "../../system/status/System.mjs";
 import { zipExport } from "../../utils/ZipFiles.js";
@@ -25,6 +25,21 @@ allServices.push({
   handler: [
     async (req, res) => {
       try {
+        if (getCurrentSystem().isImportInProgress()) {
+          return handleError(
+            res,
+            BadTimeForRequestTryLaterCode,
+            "An import is currently running. Try later."
+          );
+        }
+        if (getCurrentSystem().isExportInProgress()) {
+          return handleError(
+            res,
+            BadTimeForRequestTryLaterCode,
+            "An export is currently running. Try later."
+          );
+        }
+        await getCurrentSystem().preExport();
         withDefaultPersistence(res, async (persistence) => {
           const { tables, error, errorCode } =
             await persistence.exportTableData();
@@ -44,6 +59,8 @@ allServices.push({
         });
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
+      } finally {
+        await getCurrentSystem().postExport();
       }
     },
   ],
@@ -57,6 +74,21 @@ allServices.push({
   handler: [
     async (req, res) => {
       try {
+        if (getCurrentSystem().isImportInProgress()) {
+          return handleError(
+            res,
+            BadTimeForRequestTryLaterCode,
+            "An import is currently running. Try later."
+          );
+        }
+        if (getCurrentSystem().isExportInProgress()) {
+          return handleError(
+            res,
+            BadTimeForRequestTryLaterCode,
+            "An export is currently running. Try later."
+          );
+        }
+        await getCurrentSystem().preExport();
         withDefaultPersistence(res, async (persistence) => {
           const { tables, error, errorCode } =
             await persistence.exportTableData();
@@ -116,6 +148,8 @@ allServices.push({
         });
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
+      } finally {
+        await getCurrentSystem().postExport();
       }
     },
   ],
@@ -129,6 +163,21 @@ allServices.push({
   handler: [
     async (req, res) => {
       try {
+        if (getCurrentSystem().isImportInProgress()) {
+          return handleError(
+            res,
+            BadTimeForRequestTryLaterCode,
+            "An import is currently running. Try later."
+          );
+        }
+        if (getCurrentSystem().isExportInProgress()) {
+          return handleError(
+            res,
+            BadTimeForRequestTryLaterCode,
+            "An export is currently running. Try later."
+          );
+        }
+        await getCurrentSystem().preExport();
         const systemBackupStorePath =
           getCurrentSystem().getSystemBackupStorePath();
         withDefaultPersistence(res, async (persistence) => {
@@ -194,6 +243,8 @@ allServices.push({
         });
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
+      } finally {
+        await getCurrentSystem().postExport();
       }
     },
   ],

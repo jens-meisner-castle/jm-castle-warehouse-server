@@ -6,7 +6,7 @@ import {
   FindResponse,
   Table,
   UnknownErrorCode,
-} from "jm-castle-warehouse-types/build";
+} from "jm-castle-types";
 import {
   AllTables,
   MariaDbClient,
@@ -134,6 +134,7 @@ allServices.push({
             );
           }
           const mariaClient = persistence as MariaDbClient;
+          getCurrentSystem().preSetup();
           const setup = await executeSetup(
             mariaClient,
             mariaClient.getDatabaseName(),
@@ -146,6 +147,8 @@ allServices.push({
         });
       } catch (error) {
         return handleError(res, UnknownErrorCode, error.toString());
+      } finally {
+        getCurrentSystem().postSetup();
       }
     },
   ],

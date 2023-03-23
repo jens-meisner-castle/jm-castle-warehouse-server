@@ -1,20 +1,15 @@
 import fs from "fs";
-import {
-  ApiServiceResponse,
-  UnknownErrorCode,
-} from "jm-castle-warehouse-types/build";
-import { DateTime } from "luxon";
+import { ApiServiceResponse, UnknownErrorCode } from "jm-castle-types";
+import { BadTimeForRequestTryLaterCode } from "jm-castle-types/build";
+import { DbExportData, ImportResult } from "jm-castle-warehouse-types";
 import multiparty from "multiparty";
 import { getCurrentSystem } from "../../system/status/System.mjs";
+import { copyFilesFromTo } from "../../utils/File.mjs";
 import { extractZipExport } from "../../utils/ZipFiles.js";
 import { ApiService } from "../Types.mjs";
 import { handleError, withDefaultPersistence } from "../Utils.mjs";
 
 const allServices: ApiService[] = [];
-
-interface ImportResult {
-  success: boolean;
-}
 
 allServices.push({
   url: "/import/system/file",
@@ -24,6 +19,21 @@ allServices.push({
   handler: [
     async (req, res) => {
       try {
+        if (getCurrentSystem().isImportInProgress()) {
+          return handleError(
+            res,
+            BadTimeForRequestTryLaterCode,
+            "An import is currently running. Try later."
+          );
+        }
+        if (getCurrentSystem().isExportInProgress()) {
+          return handleError(
+            res,
+            BadTimeForRequestTryLaterCode,
+            "An export is currently running. Try later."
+          );
+        }
+        await getCurrentSystem().preImport();
         const formData = new multiparty.Form();
         formData.parse(req, async (error, fields, files) => {
           withDefaultPersistence(res, async (persistence) => {
@@ -36,44 +46,86 @@ allServices.push({
             if (!fs.existsSync(getCurrentSystem().getTempFilePath())) {
               fs.mkdirSync(getCurrentSystem().getTempFilePath());
             }
-            const fileFragment = `export-${DateTime.now().toFormat(
-              "yyyy-LL-dd-HH-mm-ss-SSS"
+            const zipOutPath = `${getCurrentSystem().getTempFilePath()}/${zipFile.originalFilename.replace(
+              ".zip",
+              ""
             )}`;
-            const dbDir = `${getCurrentSystem().getTempFilePath()}/${fileFragment}`;
-            // be sure that the new dir is empty (delete + create)
-            if (fs.existsSync(dbDir)) {
-              fs.rmSync(dbDir, { recursive: true });
-            }
-            fs.mkdirSync(dbDir);
-            const { success, error } = await extractZipExport(
+            console.log(
+              "importing:",
               zipFile.path,
-              dbDir
+              zipFile.originalFilename,
+              zipOutPath
             );
-            if (error) {
-              return handleError(res, UnknownErrorCode, error);
+            // be sure that the new dir is empty (delete + create)
+            if (fs.existsSync(zipOutPath)) {
+              fs.rmSync(zipOutPath, { recursive: true });
             }
-            if (!success) {
+            fs.mkdirSync(zipOutPath);
+            const { success: zipSuccess, error: zipError } =
+              await extractZipExport(zipFile.path, zipOutPath);
+            if (zipError) {
+              return handleError(res, UnknownErrorCode, zipError);
+            }
+            if (!zipSuccess) {
               return handleError(
                 res,
                 UnknownErrorCode,
                 `Received no error and no success from extractZipExport.`
               );
             }
+            const fileContent = fs.readFileSync(
+              `${zipOutPath}/database/export-db.json`
+            );
+            const dbData: DbExportData = JSON.parse(
+              fileContent.toString("utf-8")
+            );
+            const {
+              tables,
+              error: dbError,
+              errorCode: dbErrorCode,
+            } = await persistence.importTableData(dbData.tables);
+            if (dbError) {
+              return handleError(res, dbErrorCode || UnknownErrorCode, dbError);
+            }
+            if (!tables) {
+              return handleError(
+                res,
+                UnknownErrorCode,
+                `Received no error and no table results from importTableData.`
+              );
+            }
+            const { success, error: imagesCopyError } = copyFilesFromTo(
+              `${zipOutPath}/images`,
+              getCurrentSystem().getImageStorePath()
+            );
+            if (imagesCopyError) {
+              return handleError(
+                res,
+                dbErrorCode || UnknownErrorCode,
+                imagesCopyError
+              );
+            }
+            const response: ImportResult = {
+              database: { tables },
+              images: { inserted: -1, updated: -1 },
+            };
             // cleanup
             if (fs.existsSync(zipFile.path)) {
               fs.rmSync(zipFile.path);
             }
-            if (fs.existsSync(dbDir)) {
-              fs.rmSync(dbDir, { recursive: true });
+            if (fs.existsSync(zipOutPath)) {
+              fs.rmSync(zipOutPath, { recursive: true });
             }
             const apiResponse: ApiServiceResponse<ImportResult> = {
-              response: { success: true },
+              response,
             };
+            await getCurrentSystem().postImport();
             return res.send(apiResponse);
           });
         });
       } catch (error) {
-        return handleError(res, UnknownErrorCode, error.toString());
+        handleError(res, UnknownErrorCode, error.toString());
+        await getCurrentSystem().postImport();
       }
     },
   ],

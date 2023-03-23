@@ -2,7 +2,11 @@ import { InsertResponse, SelectResponse } from "jm-castle-types";
 import { PersistentRow, Row_Receipt as Row } from "jm-castle-warehouse-types";
 import { PoolConnection } from "mariadb";
 import { without } from "../../../utils/Basic.mjs";
-import { AggreagtionFunction, AggregationFunctions } from "../../Types.mjs";
+import {
+  AggregationFunction,
+  AggregationFunctions,
+  StockdataInsertOptions,
+} from "../../Types.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
 import { TableReceipt } from "../tables/Receipt.mjs";
 import {
@@ -15,17 +19,21 @@ const table = TableReceipt;
 
 export const insert = async (
   values: Row & PersistentRow,
-  client: MariaDbClient
+  client: MariaDbClient,
+  options?: StockdataInsertOptions
 ): Promise<InsertResponse<Row>> => {
   let connection: PoolConnection | undefined = undefined;
   try {
+    const { noDatasetIdNeeded } = options || {};
     const cmd = `INSERT INTO ${table.id} SET${valuesClause(
       without(values, "dataset_id")
     )}`;
     // für LAST_INSERT_ID() muss die selbe connection verwendet werden
     connection = await client.getDatabasePool().getConnection();
     const response = await connection.query(cmd);
-    const dataset_id = await selectLastInsertId(connection);
+    const dataset_id = noDatasetIdNeeded
+      ? "new"
+      : await selectLastInsertId(connection);
     const { affectedRows } = response || {};
     return { result: { cmd, affectedRows, data: { ...values, dataset_id } } };
   } catch (error) {
@@ -70,7 +78,7 @@ export const selectBySectionAndArticle = async (
 export const selectGroupBy = async (
   filter: Filter_At_FromTo_Seconds,
   groupBy: Array<keyof Row>,
-  aggregate: Array<{ col: keyof Row; fn: AggreagtionFunction }>,
+  aggregate: Array<{ col: keyof Row; fn: AggregationFunction }>,
   client: MariaDbClient
 ): Promise<SelectResponse<Partial<Row>>> => {
   try {

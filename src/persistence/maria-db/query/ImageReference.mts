@@ -12,6 +12,10 @@ import {
 import { DateTime } from "luxon";
 import { without } from "../../../utils/Basic.mjs";
 import { initialMasterdataFields } from "../../../utils/TableData.mjs";
+import {
+  MasterdataInsertOptions,
+  MasterdataUpdateOptions,
+} from "../../Types.mjs";
 import { MariaDbClient } from "../MariaDb.mjs";
 import { TableImageReference } from "../tables/ImageReference.mjs";
 import {
@@ -24,16 +28,19 @@ const table = TableImageReference;
 
 export const insert = async (
   values: Row & PersistentRow,
-  client: MariaDbClient
+  client: MariaDbClient,
+  options?: MasterdataInsertOptions
 ): Promise<InsertResponse<Row>> => {
   try {
+    const { noTableStatsUpdate } = options || {};
     const cmd = `INSERT INTO ${table.id} SET${valuesClause(values)}`;
     const response = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
-    client.changedTableStats("image_reference", {
-      countOfRows: undefined,
-      lastChangeAt: DateTime.now().toSeconds(),
-    });
+    !noTableStatsUpdate &&
+      client.changedTableStats("image_reference", {
+        countOfRows: undefined,
+        lastChangeAt: DateTime.now().toSeconds(),
+      });
     return { result: { cmd, affectedRows, data: values } };
   } catch (error) {
     return { error: error.toString() };
@@ -42,21 +49,33 @@ export const insert = async (
 
 export const update = async (
   values: Row & PersistentRow,
-  client: MariaDbClient
+  client: MariaDbClient,
+  options?: MasterdataUpdateOptions
 ): Promise<UpdateResponse<Row>> => {
   try {
     const { image_id, dataset_version, reference } = values;
-    const valuesToUpdate = without({ ...values }, "image_id");
-    valuesToUpdate.dataset_version = dataset_version + 1;
-    const cmd = `UPDATE ${table.id} SET${valuesClause(
-      valuesToUpdate
-    )} WHERE image_id = '${image_id}' AND dataset_version = ${dataset_version}`;
+    const valuesToUpdate = without({ ...values }, "image_id", "reference");
+    const {
+      noCheckDatasetVersion,
+      noIncreaseDatasetVersion,
+      noTableStatsUpdate,
+    } = options || {};
+    valuesToUpdate.dataset_version =
+      dataset_version + (noIncreaseDatasetVersion ? 0 : 1);
+    const cmd = noCheckDatasetVersion
+      ? `UPDATE ${table.id} SET${valuesClause(
+          valuesToUpdate
+        )} WHERE image_id = '${image_id}' AND reference = '${reference}'`
+      : `UPDATE ${table.id} SET${valuesClause(
+          valuesToUpdate
+        )} WHERE image_id = '${image_id}' AND reference = '${reference}' AND dataset_version = ${dataset_version}`;
     const response: any = await client.getDatabasePool().query(cmd);
     const { affectedRows } = response || {};
     if (affectedRows === 1) {
-      client.changedTableStats("image_reference", {
-        lastChangeAt: DateTime.now().toSeconds(),
-      });
+      !noTableStatsUpdate &&
+        client.changedTableStats("image_reference", {
+          lastChangeAt: DateTime.now().toSeconds(),
+        });
       return {
         result: { cmd, affectedRows, data: { ...values, ...valuesToUpdate } },
       };

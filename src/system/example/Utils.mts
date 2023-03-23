@@ -5,6 +5,9 @@ import https from "https";
 import {
   ApiServiceResponse,
   InsertResponse,
+  UnknownErrorCode,
+} from "jm-castle-types";
+import {
   Row_Article,
   Row_Costunit,
   Row_Hashtag,
@@ -13,8 +16,7 @@ import {
   Row_Receipt,
   Row_Store,
   Row_StoreSection,
-  UnknownErrorCode,
-} from "jm-castle-warehouse-types/build";
+} from "jm-castle-warehouse-types";
 import { Persistence } from "../../persistence/Types.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { getExtension, getFilename } from "../../utils/File.mjs";

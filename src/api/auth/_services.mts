@@ -2,12 +2,11 @@ import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
   getErrorCode,
-  LoginResult,
   TokenUndefinedErrorCode,
   UnknownClientOrBadIpCode,
   UnknownErrorCode,
-  VerifyTokenResult,
-} from "jm-castle-warehouse-types";
+} from "jm-castle-types";
+import { LoginResult, VerifyTokenResult } from "jm-castle-warehouse-types";
 import { generateJWT } from "../../auth/GenerateToken.mjs";
 import { verifyToken } from "../../auth/VerifyToken.mjs";
 import { getStrictSingleQueryParametersSchema } from "../../json-schema/parameters.mjs";

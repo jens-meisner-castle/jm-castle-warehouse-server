@@ -1,9 +1,9 @@
 import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
-  Row_ImageReference,
   UnknownErrorCode,
-} from "jm-castle-warehouse-types/build";
+} from "jm-castle-types";
+import { Row_ImageReference } from "jm-castle-warehouse-types/build";
 import { getStrictSingleQueryParametersSchema } from "../../json-schema/parameters.mjs";
 import { without } from "../../utils/Basic.mjs";
 import { initialMasterdataFields } from "../../utils/TableData.mjs";

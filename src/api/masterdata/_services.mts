@@ -2,7 +2,7 @@ import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
   UnknownErrorCode,
-} from "jm-castle-warehouse-types";
+} from "jm-castle-types";
 import { getQueryParametersSchema } from "../../json-schema/parameters.mjs";
 import { MasterdataTables } from "../../persistence/maria-db/MariaDb.mjs";
 import { ApiService } from "../Types.mjs";

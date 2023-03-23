@@ -1,7 +1,4 @@
-import {
-  ApiServiceResponse,
-  UnknownErrorCode,
-} from "jm-castle-warehouse-types/build";
+import { ApiServiceResponse, UnknownErrorCode } from "jm-castle-types";
 import { services as articleServices } from "./article/_services.mjs";
 import { services as attributeServices } from "./attribute/_services.mjs";
 import { services as authServices } from "./auth/_services.mjs";
@@ -14,13 +11,13 @@ import { services as imageContentServices } from "./imageContent/_services.mjs";
 import { services as imageReferenceServices } from "./imageReference/_services.mjs";
 import { services as importServices } from "./import/_services.mjs";
 import { services as manufacturerServices } from "./manufacturer/_services.mjs";
+import { services as masterdataServices } from "./masterdata/_services.mjs";
 import { services as receiptServices } from "./receipt/_services.mjs";
 import { services as receiverServices } from "./receiver/_services.mjs";
 import { services as stockServices } from "./stock/_services.mjs";
 import { services as storeServices } from "./store/_services.mjs";
 import { services as storeSectionServices } from "./storeSection/_services.mjs";
 import { services as systemServices } from "./system/_services.mjs";
-import { services as masterdataServices } from "./masterdata/_services.mjs";
 import { ApiService, getSerializableServices } from "./Types.mjs";
 import { handleError } from "./Utils.mjs";
 

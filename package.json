@@ -1,6 +1,6 @@
 {
   "name": "jm-castle-warehouse-server",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "type": "module",
   "module": "./build",
   "files": [
@@ -66,8 +66,8 @@
     "del-cli": "^5.0.0",
     "eslint": "^8.23.1",
     "jm-castle-mariadb": "^0.3.0",
-    "jm-castle-types": "^0.4.0",
-    "jm-castle-warehouse-types": "^0.17.3",
+    "jm-castle-types": "^0.4.3",
+    "jm-castle-warehouse-types": "^0.19.0",
     "nodemon": "^2.0.19",
     "prettier": "^2.7.1",
     "ts-node": "^10.9.1",

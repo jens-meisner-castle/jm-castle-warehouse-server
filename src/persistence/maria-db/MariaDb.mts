@@ -1,7 +1,13 @@
 import { MariaInterface } from "jm-castle-mariadb";
-import { SelectResponse, Table } from "jm-castle-types";
+import {
+  InsertResponse,
+  SelectResponse,
+  Table,
+  UpdateResponse,
+} from "jm-castle-types";
 import {
   DbExportData,
+  DbImportData,
   ErrorCode,
   MariaDatabaseSpec,
   PersistentRow,
@@ -24,8 +30,11 @@ import {
 import { createPool, Pool } from "mariadb";
 import { ErrorWithCode } from "../../utils/Basic.mjs";
 import {
-  AggreagtionFunction,
+  AggregationFunction,
+  MasterdataInsertOptions,
+  MasterdataUpdateOptions,
   Persistence,
+  StockdataInsertOptions,
   TableRowsChangeConsumer,
 } from "../Types.mjs";
 import {
@@ -263,6 +272,102 @@ export class MariaDbClient implements Persistence, MariaInterface {
     return { rows: result.rows };
   };
 
+  private importSingleTableStockdata = async function <T>(
+    rows: T[],
+    access: {
+      insert: (
+        row: T,
+        options?: StockdataInsertOptions
+      ) => Promise<InsertResponse<T>>;
+      update?: (row: T) => Promise<UpdateResponse<T>>;
+    }
+  ): Promise<{ inserted: number; updated: number }> {
+    let inserted = 0;
+    let updated = 0;
+    const insertOptions: StockdataInsertOptions = {
+      noDatasetIdNeeded: true,
+    };
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const { result, error, errorCode } = await access.insert(
+        row,
+        insertOptions
+      );
+      if (error) {
+        const { result, error, errorCode } = access.update
+          ? await access.update(row)
+          : {
+              error: `No update function available for: ${row}`,
+              errorCode: UnknownErrorCode as ErrorCode,
+              result: undefined,
+            };
+        if (error) {
+          throw new ErrorWithCode(
+            errorCode || UnknownErrorCode,
+            "Fatal error: Insert error and update error: " + error
+          );
+        } else {
+          updated = updated + 1;
+        }
+      } else {
+        inserted = inserted + 1;
+      }
+    }
+    return { inserted, updated };
+  };
+
+  private importSingleTableMasterdata = async function <T>(
+    rows: T[],
+    access: {
+      insert: (
+        row: T,
+        options?: MasterdataInsertOptions
+      ) => Promise<InsertResponse<T>>;
+      update?: (
+        row: T,
+        options?: MasterdataUpdateOptions
+      ) => Promise<UpdateResponse<T>>;
+    }
+  ): Promise<{ inserted: number; updated: number }> {
+    let inserted = 0;
+    let updated = 0;
+    const insertOptions: MasterdataInsertOptions = {
+      noTableStatsUpdate: true,
+    };
+    const updateOptions: MasterdataUpdateOptions = {
+      noCheckDatasetVersion: true,
+      noIncreaseDatasetVersion: true,
+      noTableStatsUpdate: true,
+    };
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const { result, error, errorCode } = await access.insert(
+        row,
+        insertOptions
+      );
+      if (error) {
+        const { result, error, errorCode } = access.update
+          ? await access.update(row, updateOptions)
+          : {
+              error: `No update function available for: ${row}`,
+              errorCode: UnknownErrorCode as ErrorCode,
+              result: undefined,
+            };
+        if (error) {
+          throw new ErrorWithCode(
+            errorCode || UnknownErrorCode,
+            "Fatal error: Insert error and update error: " + error
+          );
+        } else {
+          updated = updated + 1;
+        }
+      } else {
+        inserted = inserted + 1;
+      }
+    }
+    return { inserted, updated };
+  };
+
   public exportTableData = async (): Promise<
     { tables: DbExportData["tables"] } | { error: string; errorCode: ErrorCode }
   > => {
@@ -315,6 +420,110 @@ export class MariaDbClient implements Persistence, MariaInterface {
     }
   };
 
+  public importTableData = async (
+    tables: DbExportData["tables"]
+  ): Promise<
+    | (DbImportData & { error?: never; errorCode?: never })
+    | { error: string; errorCode: ErrorCode; tables?: never }
+  > => {
+    const {
+      attribute,
+      hashtag,
+      manufacturer,
+      costunit,
+      receiver,
+      imageReference,
+      imageContent,
+      article,
+      store,
+      storeSection,
+      receipt,
+      emission,
+      /** receiptRequest,
+      emissionRequest, */
+    } = tables;
+    const attributeResult = await this.importSingleTableMasterdata(
+      attribute.rows,
+      this.tables.attribute
+    );
+    const hashtagResult = await this.importSingleTableMasterdata(
+      hashtag.rows,
+      this.tables.hashtag
+    );
+    const manufacturerResult = await this.importSingleTableMasterdata(
+      manufacturer.rows,
+      this.tables.manufacturer
+    );
+    const costunitResult = await this.importSingleTableMasterdata(
+      costunit.rows,
+      this.tables.costunit
+    );
+    const receiverResult = await this.importSingleTableMasterdata(
+      receiver.rows,
+      this.tables.receiver
+    );
+    const imageReferenceResult = await this.importSingleTableMasterdata(
+      imageReference.rows,
+      this.tables.imageReference
+    );
+    const imageContentResult = await this.importSingleTableMasterdata(
+      imageContent.rows,
+      this.tables.imageContent
+    );
+    const articleResult = await this.importSingleTableMasterdata(
+      article.rows,
+      this.tables.article
+    );
+    const storeResult = await this.importSingleTableMasterdata(
+      store.rows,
+      this.tables.store
+    );
+    const storeSectionResult = await this.importSingleTableMasterdata(
+      storeSection.rows,
+      this.tables.storeSection
+    );
+    const receiptResult = await this.importSingleTableStockdata(
+      receipt.rows.sort((a, b) =>
+        typeof a.dataset_id === "number"
+          ? typeof b.dataset_id === "number"
+            ? a.dataset_id - b.dataset_id
+            : -1
+          : typeof b.dataset_id === "number"
+          ? 1
+          : 0
+      ),
+      this.tables.receipt
+    );
+    const emissionResult = await this.importSingleTableStockdata(
+      emission.rows.sort((a, b) =>
+        typeof a.dataset_id === "number"
+          ? typeof b.dataset_id === "number"
+            ? a.dataset_id - b.dataset_id
+            : -1
+          : typeof b.dataset_id === "number"
+          ? 1
+          : 0
+      ),
+      this.tables.emission
+    );
+    const tableResults: DbImportData["tables"] = {
+      attribute: attributeResult,
+      hashtag: hashtagResult,
+      manufacturer: manufacturerResult,
+      costunit: costunitResult,
+      receiver: receiverResult,
+      imageReference: imageReferenceResult,
+      imageContent: imageContentResult,
+      article: articleResult,
+      store: storeResult,
+      storeSection: storeSectionResult,
+      receipt: receiptResult,
+      emission: emissionResult,
+      receiptRequest: { inserted: 0, updated: 0 },
+      emissionRequest: { inserted: 0, updated: 0 },
+    };
+    return { tables: tableResults };
+  };
   public tables = {
     stats: {
       countOfRowsForTables: (...tables: Table[]) =>
@@ -339,10 +548,14 @@ export class MariaDbClient implements Persistence, MariaInterface {
         ),
     },
     imageReference: {
-      insert: (values: Row_ImageReference & PersistentRow) =>
-        insertImageReference(values, this),
-      update: (values: Row_ImageReference & PersistentRow) =>
-        updateImageReference(values, this),
+      insert: (
+        values: Row_ImageReference & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertImageReference(values, this, options),
+      update: (
+        values: Row_ImageReference & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateImageReference(values, this, options),
       updateImageReferences: (
         reference: string,
         previous: string | null,
@@ -355,10 +568,14 @@ export class MariaDbClient implements Persistence, MariaInterface {
       all: () => allFromImageReference(this),
     },
     imageContent: {
-      insert: (values: Row_ImageContent & PersistentRow) =>
-        insertImageContent(values, this),
-      update: (values: Row_ImageContent & PersistentRow) =>
-        updateImageContent(values, this),
+      insert: (
+        values: Row_ImageContent & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertImageContent(values, this, options),
+      update: (
+        values: Row_ImageContent & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateImageContent(values, this, options),
       select: (filter: Filter_ImageId | Filter_ImageExtension) =>
         selectFromImageContent(filter, this),
       selectLikeImageId: (filter: Filter_ImageId) =>
@@ -366,37 +583,55 @@ export class MariaDbClient implements Persistence, MariaInterface {
       all: () => allFromImageContent(this),
     },
     attribute: {
-      insert: (values: Row_Attribute & PersistentRow) =>
-        insertAttribute(values, this),
-      update: (values: Row_Attribute & PersistentRow) =>
-        updateAttribute(values, this),
+      insert: (
+        values: Row_Attribute & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertAttribute(values, this, options),
+      update: (
+        values: Row_Attribute & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateAttribute(values, this, options),
       select: (filter: Filter_NameLike) => selectFromAttribute(filter, this),
       selectByKey: (attributeId: string) =>
         selectByKeyFromAttribute(attributeId, this),
       all: () => allFromAttribute(this),
     },
     store: {
-      insert: (values: Row_Store & PersistentRow) => insertStore(values, this),
-      update: (values: Row_Store & PersistentRow) => updateStore(values, this),
+      insert: (
+        values: Row_Store & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertStore(values, this, options),
+      update: (
+        values: Row_Store & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateStore(values, this, options),
       select: (filter: Filter_NameLike) => selectFromStore(filter, this),
       selectByKey: (storeId: string) => selectByKeyFromStore(storeId, this),
       all: () => allFromStore(this),
     },
     storeSection: {
-      insert: (values: Row_StoreSection & PersistentRow) =>
-        insertStoreSection(values, this),
-      update: (values: Row_StoreSection & PersistentRow) =>
-        updateStoreSection(values, this),
+      insert: (
+        values: Row_StoreSection & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertStoreSection(values, this, options),
+      update: (
+        values: Row_StoreSection & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateStoreSection(values, this, options),
       select: (filter: Filter_NameLike) => selectFromStoreSection(filter, this),
       selectByKey: (sectionId: string) =>
         selectByKeyFromStoreSection(sectionId, this),
       all: () => allFromStoreSection(this),
     },
     article: {
-      insert: (values: Row_Article & PersistentRow) =>
-        insertArticle(values, this),
-      update: (values: Row_Article & PersistentRow) =>
-        updateArticle(values, this),
+      insert: (
+        values: Row_Article & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertArticle(values, this, options),
+      update: (
+        values: Row_Article & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateArticle(values, this, options),
       select: (filter: Filter_NameLike & Partial<Filter_Hashtag>) =>
         selectFromArticle(filter, this),
       selectByKey: (articleId: string) =>
@@ -404,48 +639,66 @@ export class MariaDbClient implements Persistence, MariaInterface {
       all: () => allFromArticle(this),
     },
     hashtag: {
-      insert: (values: Row_Hashtag & PersistentRow) =>
-        insertHashtag(values, this),
-      update: (values: Row_Hashtag & PersistentRow) =>
-        updateHashtag(values, this),
+      insert: (
+        values: Row_Hashtag & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertHashtag(values, this, options),
+      update: (
+        values: Row_Hashtag & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateHashtag(values, this, options),
       select: (filter: Filter_NameLike) => selectFromHashtag(filter, this),
       selectByKey: (articleId: string) =>
         selectByKeyFromHashtag(articleId, this),
       all: () => allFromHashtag(this),
     },
     costunit: {
-      insert: (values: Row_Costunit & PersistentRow) =>
-        insertCostunit(values, this),
-      update: (values: Row_Costunit & PersistentRow) =>
-        updateCostunit(values, this),
+      insert: (
+        values: Row_Costunit & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertCostunit(values, this, options),
+      update: (
+        values: Row_Costunit & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateCostunit(values, this, options),
       select: (filter: Filter_NameLike) => selectFromCostunit(filter, this),
       selectByKey: (articleId: string) =>
         selectByKeyFromCostunit(articleId, this),
       all: () => allFromCostunit(this),
     },
     receiver: {
-      insert: (values: Row_Receiver & PersistentRow) =>
-        insertReceiver(values, this),
-      update: (values: Row_Receiver & PersistentRow) =>
-        updateReceiver(values, this),
+      insert: (
+        values: Row_Receiver & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertReceiver(values, this, options),
+      update: (
+        values: Row_Receiver & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateReceiver(values, this, options),
       select: (filter: Filter_NameLike) => selectFromReceiver(filter, this),
       selectByKey: (articleId: string) =>
         selectByKeyFromReceiver(articleId, this),
       all: () => allFromReceiver(this),
     },
     manufacturer: {
-      insert: (values: Row_Manufacturer & PersistentRow) =>
-        insertManufacturer(values, this),
-      update: (values: Row_Manufacturer & PersistentRow) =>
-        updateManufacturer(values, this),
+      insert: (
+        values: Row_Manufacturer & PersistentRow,
+        options?: MasterdataInsertOptions
+      ) => insertManufacturer(values, this, options),
+      update: (
+        values: Row_Manufacturer & PersistentRow,
+        options?: MasterdataUpdateOptions
+      ) => updateManufacturer(values, this, options),
       select: (filter: Filter_NameLike) => selectFromManufacturer(filter, this),
       selectByKey: (articleId: string) =>
         selectByKeyFromManufacturer(articleId, this),
       all: () => allFromManufacturer(this),
     },
     receipt: {
-      insert: (values: Row_Receipt & PersistentRow) =>
-        insertReceipt(values, this),
+      insert: (
+        values: Row_Receipt & PersistentRow,
+        options?: StockdataInsertOptions
+      ) => insertReceipt(values, this, options),
       select: (filter: Filter_At_FromTo_Seconds) =>
         selectFromReceipt(filter, this),
       selectBySectionAndArticle: (sectionId: string, articleId: string) =>
@@ -453,19 +706,21 @@ export class MariaDbClient implements Persistence, MariaInterface {
       selectGroupBy: (
         filter: Filter_At_FromTo_Seconds,
         groupBy: Array<keyof Row_Receipt>,
-        aggregate: Array<{ col: keyof Row_Receipt; fn: AggreagtionFunction }>
+        aggregate: Array<{ col: keyof Row_Receipt; fn: AggregationFunction }>
       ) => selectGroupByFromReceipt(filter, groupBy, aggregate, this),
       all: () => allFromReceipt(this),
     },
     emission: {
-      insert: (values: Row_Emission & PersistentRow) =>
-        insertEmission(values, this),
+      insert: (
+        values: Row_Emission & PersistentRow,
+        options?: StockdataInsertOptions
+      ) => insertEmission(values, this, options),
       select: (filter: Filter_At_FromTo_Seconds) =>
         selectFromEmission(filter, this),
       selectGroupBy: (
         filter: Filter_At_FromTo_Seconds,
         groupBy: Array<keyof Row_Emission>,
-        aggregate: Array<{ col: keyof Row_Emission; fn: AggreagtionFunction }>
+        aggregate: Array<{ col: keyof Row_Emission; fn: AggregationFunction }>
       ) => selectGroupByFromEmission(filter, groupBy, aggregate, this),
       all: () => allFromEmission(this),
     },

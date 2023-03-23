@@ -2,7 +2,7 @@ import {
   ApiServiceResponse,
   BadRequestMissingParameterCode,
   UnknownErrorCode,
-} from "jm-castle-warehouse-types/build";
+} from "jm-castle-types";
 import { getOptionalSingleQueryParametersSchema } from "../../json-schema/parameters.mjs";
 import {
   AllExamples,

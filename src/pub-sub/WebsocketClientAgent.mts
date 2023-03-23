@@ -7,7 +7,10 @@ import {
 } from "jm-castle-types";
 import { WebSocket } from "ws";
 import { TableRowsChangeConsumer } from "../persistence/Types.mjs";
-import { CastleWarehouse } from "../system/status/System.mjs";
+import {
+  CastleWarehouse,
+  ExportImportActiveConsumer,
+} from "../system/status/System.mjs";
 
 let counter = 0;
 
@@ -43,13 +46,14 @@ export class WebsocketClientAgent {
   private system: CastleWarehouse;
   private socket: WebSocket;
   private tableRowsChangeConsumer: TableRowsChangeConsumer;
+  private exportImportActiveConsumer: ExportImportActiveConsumer;
 
   public handleClose = () => {
     // after the socket was closed
     this.cleanup.forEach((fn) => fn());
   };
 
-  private disconnectFromTableStats = () => {
+  private disconnectFromTableRowsChanges = () => {
     const consumer = this.tableRowsChangeConsumer;
     this.tableRowsChangeConsumer = undefined;
     this.system.removeTableRowsChangeConsumer(consumer);
@@ -59,13 +63,34 @@ export class WebsocketClientAgent {
     if (this.tableRowsChangeConsumer) {
       return;
     }
-    this.cleanup.push(this.disconnectFromTableStats);
+    this.cleanup.push(this.disconnectFromTableRowsChanges);
     this.tableRowsChangeConsumer = {
       onTableRowsChange: async (changes) => {
         this.sendMessage(msg_publish("/system/table-rows-change", { changes }));
       },
     };
     this.system.addTableRowsChangeConsumer(this.tableRowsChangeConsumer);
+  };
+
+  private disconnectFromExportImportActive = () => {
+    const consumer = this.exportImportActiveConsumer;
+    this.exportImportActiveConsumer = undefined;
+    this.system.removeExportImportActiveConsumer(consumer);
+  };
+
+  private connectToExportImportActive = async () => {
+    if (this.exportImportActiveConsumer) {
+      return;
+    }
+    this.cleanup.push(this.disconnectFromExportImportActive);
+    this.exportImportActiveConsumer = {
+      onExportImportChange: async (state) => {
+        this.sendMessage(
+          msg_publish("/system/export-import-active", { state })
+        );
+      },
+    };
+    this.system.addExportImportActiveConsumer(this.exportImportActiveConsumer);
   };
 
   private consumeSubscribeMessage = async (msg: WsMessage) => {
@@ -75,6 +100,9 @@ export class WebsocketClientAgent {
       switch (topic) {
         case "/system/table-rows-change":
           await this.connectToTableRowsChanges();
+          break;
+        case "/system/export-import-active":
+          await this.connectToExportImportActive();
           break;
       }
     }
