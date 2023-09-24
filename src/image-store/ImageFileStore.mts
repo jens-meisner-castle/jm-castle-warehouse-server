@@ -21,10 +21,10 @@ export class ImageFileStore {
   private maxWidth: number;
   private maxHeight: number;
 
-  public save = async (
+  async save(
     sourcePath: string,
     imageId: string
-  ): Promise<ImageDimensions & { size: number; error?: string }> => {
+  ): Promise<ImageDimensions & { size: number; error?: string }> {
     let shouldResize = true;
     try {
       const { width, height } = await this.dimensions(sourcePath);
@@ -61,9 +61,9 @@ export class ImageFileStore {
         error: `Catched error when when trying to save image: ${error}`,
       };
     }
-  };
+  }
 
-  public dimensions = async (sourcePath: string): Promise<ImageDimensions> => {
+  async dimensions(sourcePath: string): Promise<ImageDimensions> {
     return new Promise((resolve, reject) => {
       const sharpInstance = sharp(sourcePath);
       sharpInstance.metadata((error, metadata) => {
@@ -79,5 +79,5 @@ export class ImageFileStore {
         }
       });
     });
-  };
+  }
 }
